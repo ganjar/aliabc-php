@@ -1,2 +1,2 @@
 # aliabc-php
-**Application Language Integration** library
+**Application Language Integration ABC** - php library
