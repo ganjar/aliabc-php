@@ -4,7 +4,7 @@
 ## Installation
 
 ```bash
-$ composer require ganjar/ali
+$ composer require ganjar/aliabc-php
 ```
 
 ## Basic Usage
