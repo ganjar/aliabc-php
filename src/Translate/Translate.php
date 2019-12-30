@@ -140,28 +140,32 @@ class Translate
      */
     public function translateAll(array $phrases, \Closure $missingTranslationCallback = null)
     {
+        $translatesResult = [];
         $searchPhrases = $originalPhrases = [];
         foreach ($phrases as $phrase) {
             $searchPhrases[$phrase] = $this->originalProcess($phrase);
             $originalPhrases[$searchPhrases[$phrase]] = $phrase;
         }
 
-        $translates = $this->getSource()->getTranslates(
+        $translatesFromSource = $this->getSource()->getTranslates(
             $searchPhrases,
             $this->getLanguage()
         );
-        foreach ($translates as $searchPhrase => &$translate) {
+
+        foreach ($translatesFromSource as $searchPhrase => $translate) {
+            $originalPhrase = $originalPhrases[$searchPhrase];
             if ($translate !== '') {
-                $translate = $this->translateProcess($originalPhrases[$searchPhrase], $translate);
+                $translate = $this->translateProcess($originalPhrase, $translate);
             } else {
                 $this->getEvent()->trigger(Event::EVENT_MISSING_TRANSLATION, $searchPhrase, $this);
                 if ($missingTranslationCallback) {
                     $translate = $missingTranslationCallback($searchPhrase, $this);
                 }
             }
+            $translatesResult[$originalPhrase] = $translate;
         }
 
-        return $translates;
+        return $translatesResult;
     }
 
     /**

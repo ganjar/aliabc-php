@@ -140,11 +140,9 @@ class BufferTranslate
      * Process all buffers and clear stack
      * @param $content
      * @return mixed
-     * @throws TranslateNotDefinedException
      */
     public function translateAllAndReplaceInSource($content)
     {
-        $i = 0;
         //The maximum number of iterations to find the buffer identifier in other buffers
         $maxIterations = count($this->getBuffer()->getBuffers());
 

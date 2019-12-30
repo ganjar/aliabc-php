@@ -14,6 +14,6 @@ class HtmlCommentPreProcessor extends PreProcessorAbstract
      */
     public function process($content)
     {
-        return preg_replace('#(<!--.*-->)#Usi', '', $content);
+        return preg_replace('#(<!--.*-->)#Us', '', $content);
     }
 }

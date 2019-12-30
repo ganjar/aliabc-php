@@ -8,7 +8,7 @@ namespace ALI\Buffer\PreProcessors;
  */
 class SliIgnoreTagPreProcessor extends PreProcessorAbstract
 {
-    const HTML_VAR_PATTERN = '<!--ALI::%s-->';
+    const HTML_VAR_PATTERN = '<!--SLI::%s-->';
 
     /**
      * @param string $content
