@@ -16,20 +16,21 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
      */
     public function process($buffer, $cleanBuffer)
     {
-        preg_match_all($this->getFindPhrasesRegex(), $cleanBuffer, $match);
-        $originalData = [
-            'match'    => $match[0],
-            'original' => $match['original'],
-        ];
+        //todo - how to use $cleanBuffer
+        preg_match_all($this->getFindPhrasesRegex(), $buffer, $match, PREG_OFFSET_CAPTURE);
 
-        $pos = 0;
-        $translateData = $this->getTranslate()->translateAll($originalData['original']);
+        $forTranslate = [];
+        foreach ($match['original'] as $originalData) {
+            $forTranslate[] = $originalData[0];
+        }
 
-        foreach ($originalData['original'] AS $k => $original) {
+        $translateData = $this->getTranslate()->translateAll($forTranslate);
 
-            //find original phrase position
-            $pos = strpos($buffer, $originalData['match'][$k], $pos);
-            $pos = strpos($buffer, $original, $pos);
+        $positionOffset = 0;
+        foreach ($match['original'] AS $originalData) {
+
+            $original = $originalData[0];
+            $position = $originalData[1] + $positionOffset;
 
             //don't replace if we don't have translation
             if (empty($translateData[$original])) {
@@ -39,7 +40,10 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
             $translate = htmlspecialchars($translateData[$original], ENT_QUOTES);
 
             //replace original to translate phrase
-            $buffer = substr_replace($buffer, $translate, $pos, strlen($original));
+            $originalLen = strlen($original);
+            $buffer = substr_replace($buffer, $translate, $position, $originalLen);
+
+            $positionOffset += strlen($translate) - $originalLen;
         }
 
         return $buffer;
