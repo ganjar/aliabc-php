@@ -11,20 +11,21 @@ class HtmlAttributesProcessor extends AbstractHtmlProcessor
     protected $allowAttributes = [];
 
     /**
+     * HtmlAttributesProcessor constructor.
+     * @param array $allowAttributes
+     */
+    public function __construct(array $allowAttributes)
+    {
+        $this->allowAttributes = $allowAttributes;
+    }
+
+    /**
      * Allow html attributes translation
      * @return array
      */
     public function getAllowAttributes()
     {
         return $this->allowAttributes;
-    }
-
-    /**
-     * @param array $allowAttributes
-     */
-    public function setAllowAttributes($allowAttributes)
-    {
-        $this->allowAttributes = $allowAttributes;
     }
 
     /**
