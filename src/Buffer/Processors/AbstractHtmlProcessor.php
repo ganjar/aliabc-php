@@ -29,7 +29,8 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
 
             //find original phrase position
             $pos = strpos($buffer, $originalData['match'][$k], $pos);
-            $pos = strpos($buffer, $original, $pos);
+            preg_match($this->getFindPhrasesRegex(), $buffer, $matchPosition, PREG_OFFSET_CAPTURE, $pos);
+            $pos = $matchPosition['original'][1];
 
             //don't replace if we don't have translation
             if (empty($translateData[$original])) {
