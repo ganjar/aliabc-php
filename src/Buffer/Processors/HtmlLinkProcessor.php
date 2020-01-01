@@ -4,7 +4,7 @@ namespace ALI\Buffer\Processors;
 
 /**
  * You may use this processor if you want to store information about language in URL.
- * Processor replace all links (/about/) to links with current language (/ru/about/)
+ * Processor replace all links to links with current language (/about/ -> /ru/about/)
  * Class HtmlLinkProcessor
  * @package ALI\Buffer\Processors
  */
