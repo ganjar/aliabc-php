@@ -143,6 +143,9 @@ class Translate
         $translatesResult = [];
         $searchPhrases = $originalPhrases = [];
         foreach ($phrases as $phrase) {
+            if (!$phrase) {
+                continue;
+            }
             $searchPhrases[$phrase] = $this->originalProcess($phrase);
             $originalPhrases[$searchPhrases[$phrase]] = $phrase;
         }
