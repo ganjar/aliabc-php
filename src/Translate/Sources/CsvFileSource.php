@@ -44,7 +44,7 @@ class CsvFileSource extends SourceAbstract
      * @param string $delimiter - CSV delimiter may be only one symbol
      * @param string $filesExtension
      */
-    public function __construct($directoryPath, $delimiter, $filesExtension)
+    public function __construct($directoryPath, $delimiter = ',', $filesExtension = 'csv')
     {
         $this->directoryPath = rtrim($directoryPath, '/\\');
         $this->delimiter = $delimiter;
