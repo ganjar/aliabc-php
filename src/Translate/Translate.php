@@ -155,8 +155,8 @@ class Translate
             $this->getLanguage()
         );
 
-        foreach ($translatesFromSource as $searchPhrase => $translate) {
-            $originalPhrase = $originalPhrases[$searchPhrase];
+        foreach ($searchPhrases as $originalPhrase => $searchPhrase) {
+            $translate = isset($translatesFromSource[$searchPhrase]) ? $translatesFromSource[$searchPhrase] : '';
             if ($translate !== '') {
                 $translate = $this->translateProcess($originalPhrase, $translate);
             } else {
