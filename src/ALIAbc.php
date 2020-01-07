@@ -102,12 +102,11 @@ class ALIAbc
 
 
     /**
-     * Init global ob_start
+     * This method starts global buffering
+     * for translate all buffers in source
      */
-    public function iniSourceBuffering()
+    public function initSourceBuffering()
     {
-        ob_start(function ($buffer) {
-            return $this->getBufferTranslate()->translateAllAndReplaceInSource($buffer);
-        });
+        $this->getBufferTranslate()->initBuffering();
     }
 }

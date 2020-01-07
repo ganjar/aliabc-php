@@ -194,4 +194,15 @@ class BufferTranslate
 
         return $buffer;
     }
+
+    /**
+     * This method starts global buffering
+     * for translate all buffers in source
+     */
+    public function initBuffering()
+    {
+        ob_start(function ($buffer) {
+            return $this->translateAllAndReplaceInSource($buffer);
+        });
+    }
 }
