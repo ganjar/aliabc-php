@@ -5,7 +5,7 @@ namespace ALI\Buffer\Processors;
 /**
  * You may use this processor if you want to store information about language in URL.
  * Processor replace all links to links with current language (/about/ -> /ru/about/)
- * You can use " % " before html attribute for skipping URL replacing (<a % href="/test">test</a>)
+ * You can use " % " after html tag name for skipping URL replacing (<a % href="/test">test</a>)
  * Class HtmlLinkProcessor
  * @package ALI\Buffer\Processors
  */
