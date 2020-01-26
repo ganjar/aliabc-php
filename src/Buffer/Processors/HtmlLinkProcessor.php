@@ -5,11 +5,70 @@ namespace ALI\Buffer\Processors;
 /**
  * You may use this processor if you want to store information about language in URL.
  * Processor replace all links to links with current language (/about/ -> /ru/about/)
+ * You can use " % " before html attribute for skipping URL replacing (<a % href="/test">test</a>)
  * Class HtmlLinkProcessor
  * @package ALI\Buffer\Processors
  */
 class HtmlLinkProcessor extends ProcessorAbstract
 {
+    /**
+     * Usually $_SERVER['HTTP_HOST']
+     * @var string
+     */
+    protected $currentHttpHost;
+
+    /**
+     * Attributes where we can find URLs ('href', 'action', 'src')
+     * @var array
+     */
+    protected $attributesWithLinks = [];
+
+    /**
+     * Allowed to change URLs with file extensions ('html', 'htm', 'php')
+     * @var array
+     */
+    protected $allowedExtensions = [];
+
+    /**
+     * HtmlLinkProcessor constructor.
+     * @param string $currentHttpHost
+     * @param array  $attributesWithLinks
+     * @param array  $allowedExtensions
+     */
+    public function __construct(
+        $currentHttpHost,
+        array $attributesWithLinks = ['href', 'action'],
+        array $allowedExtensions = ['html', 'php']
+    ) {
+        $this->currentHttpHost = $currentHttpHost;
+        $this->attributesWithLinks = $attributesWithLinks;
+        $this->allowedExtensions = $allowedExtensions;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCurrentHttpHost()
+    {
+        return $this->currentHttpHost;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAllowedExtensions()
+    {
+        return $this->allowedExtensions;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAttributesWithLinks()
+    {
+        return $this->attributesWithLinks;
+    }
+
     /**
      * @param string $buffer
      * @param string $cleanBuffer
@@ -18,52 +77,100 @@ class HtmlLinkProcessor extends ProcessorAbstract
      */
     public function process($buffer, $cleanBuffer)
     {
-        //Заменяем ссылки на картинки и файлы что бы не локализировать
-        //todo - set excepted extensions (or set allow extension!)
-        $buffer = preg_replace('#<a([^>]*)href=("|\')([^>]+\.(?:jpg|png|gif|pdf|jpeg|zip|rar|tar|ico|mp3))#Usi',
-            '<a$1href_ali_file=$2$3', $buffer);
+        if ($this->getTranslate()->getLanguage()->getIsOriginal()) {
+            $buffer = $this->removeExceptionMark($buffer);
+            return $buffer;
+        }
 
-        //Локализируем
-        //todo - set allowToTranslateURLs
-        //$allow = self::getAllowPregString();
-        $allow = false;
-        $language = $this->getTranslate()->getLanguage()->getAlias();
-        $host = preg_quote($_SERVER['HTTP_HOST']);
-        $buffer = preg_replace('#<(a|base)(?! %)([^>]*)href=("|\')((/)(?!' . $language . '/)|(https?://' . $host . ')(?!/' . $language . '/))(' . ($allow ? $allow : '[^>]*') . ')(?!\\\)\\3(.*)>#Usi',
-            '<$1$2href=$3$6/' . $language . '$5$7$3$8>', $buffer);
-        $buffer = preg_replace('#<form([^>]*)action=("|\')((/)(?!' . $language . '/)|(https?://' . $host . ')(?!/' . $language . '/))(' . ($allow ? $allow : '[^>]*') . ')(?!\\\)\\2(.*)>#Usi',
-            '<form$1action=$2$5/' . $language . '$4$6$2$7>', $buffer);
-        $buffer = preg_replace('#(?:document\.)?location\.href\s*=\s*("|\')((/)(?!' . $language . '/)|(https?://' . $host . ')(?!/' . $language . '/))(' . ($allow ? $allow : '.*') . ')(?!\\\)\\1#Ui',
-            'location.href=$1$4/' . $language . '$3$5$1', $buffer);
-        $buffer = str_replace('<a %', '<a ', $buffer);
+        $attributesRegex = [];
+        $attributes = $this->getAttributesWithLinks();
+        foreach ($attributes as $attribute) {
+            $attributesRegex[] = '(?:' . preg_quote($attribute) . ')';
+        }
 
+        $buffer = preg_replace_callback(
+            '#  
+                (?<start><\w+       #Html tag
+                    (?!\s\%\s)      #Skip exceptions
+                    (?:[^>]*)\s     #Any attributes
+                    (?:' . implode('|', $attributesRegex) . ')
+                        =
+                    ("|\')
+                )
+                    (?<url>.+)
+                (?<end>
+                    (?!\\\)\\2
+                )
+                #Usix',
+            function ($matches) {
+                return $matches['start'] . $this->getLocalizedUrl($matches['url']) . $matches['end'];
+            },
+            $buffer
+        );
 
-        $buffer = str_replace('href_ali_file=', 'href=', $buffer);
-        $buffer = preg_replace('#href=("|\')([^>]+/' . $language . ')\\1#Usi', 'href=$1$2/$1', $buffer);
+        $buffer = $this->removeExceptionMark($buffer);
 
         return $buffer;
     }
 
     /**
-     * Получить локализованный адрес (только полные адреса начинающиеся на / или https?://)
+     * Get localized URL (only URL starts from /, //, https://, http://)
      * @var string
      * @return string
      * @throws \ALI\Exceptions\ALIException
      */
     public function getLocalizedUrl($url)
     {
-        if (!$this->getTranslate()->getLanguage()->getIsOriginal()
-            && is_string($url)
-            && ($url[0] == '/' || strpos($url, 'http://') !== false || strpos($url, 'https://') !== false)
-        ) {
-            //todo
-            //$allow = self::getAllowPregString();
-            $language = $this->getTranslate()->getLanguage()->getAlias();
-            $allow = false;
-            $url = preg_replace('#^((?:(/)(?!' . $language . '/))|(?:(https?://' . preg_quote($_SERVER['HTTP_HOST']) . ')(?!/' . $language . '/)))(' . ($allow ? $allow : '.*') . ')$#Ui',
-                '$3/' . $language . '$2$4', $url);
+        $language = $this->getTranslate()->getLanguage();
+
+        if ($language->getIsOriginal()) {
+            return $url;
         }
 
-        return $url;
+        if (!$this->isUrlHasAllowedExtension($url)) {
+            return $url;
+        }
+
+        $languageAlias = $language->getAlias();
+
+        return preg_replace(
+            '#^
+                (?:
+                    (?:(?:https?:)?//' . preg_quote($this->getCurrentHttpHost()) . '/)
+                    |
+                    (?:/(?!/))
+                )
+                (?!' . preg_quote($languageAlias) . '(?:/|\Z))#Uixs',
+            '$0' . $languageAlias . '/', $url
+        );
+    }
+
+    /**
+     * @param string $buffer
+     * @return string
+     */
+    protected function removeExceptionMark($buffer)
+    {
+        $buffer = preg_replace('#(<\w+)\s%\s#', '$1 ', $buffer);
+
+        return $buffer;
+    }
+
+    /**
+     * @param $url
+     * @return bool
+     */
+    protected function isUrlHasAllowedExtension($url)
+    {
+        $isAllowed = true;
+
+        $urlParts = explode('.', $url);
+        if (isset($urlParts[1])) {
+            $extension = $urlParts[count($urlParts) - 1];
+
+            $isAllowed = in_array(strtolower($extension), $this->getAllowedExtensions(), true);
+        }
+
+        return $isAllowed;
     }
 }
