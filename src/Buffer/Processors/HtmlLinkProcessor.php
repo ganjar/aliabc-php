@@ -89,7 +89,7 @@ class HtmlLinkProcessor extends ProcessorAbstract
         }
 
         $buffer = preg_replace_callback(
-            '#  
+            '$  
                 (?<start><\w+       #Html tag
                     (?!\s\%\s)      #Skip exceptions
                     (?:[^>]*)\s     #Any attributes
@@ -101,7 +101,7 @@ class HtmlLinkProcessor extends ProcessorAbstract
                 (?<end>
                     (?!\\\)\\2
                 )
-                #Usix',
+                $Usix',
             function ($matches) {
                 return $matches['start'] . $this->getLocalizedUrl($matches['url']) . $matches['end'];
             },
