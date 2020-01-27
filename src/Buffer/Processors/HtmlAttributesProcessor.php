@@ -14,7 +14,7 @@ class HtmlAttributesProcessor extends AbstractHtmlProcessor
      * HtmlAttributesProcessor constructor.
      * @param array $allowAttributes
      */
-    public function __construct(array $allowAttributes)
+    public function __construct(array $allowAttributes = ['title', 'alt', 'placeholder', 'content'])
     {
         $this->allowAttributes = $allowAttributes;
     }

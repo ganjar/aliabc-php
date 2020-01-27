@@ -24,7 +24,7 @@ class HtmlLinkProcessor extends ProcessorAbstract
     protected $attributesWithLinks = [];
 
     /**
-     * Allowed to change URLs with file extensions ('html', 'htm', 'php')
+     * Allowed to change URLs with file extensions ('html', 'php')
      * @var array
      */
     protected $allowedExtensions = [];
