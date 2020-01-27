@@ -46,8 +46,10 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
                 continue;
             }
 
+            $translate = $translateData[$original];
+
             if ($this->isApplyHtmlEntityEncode()) {
-                $translate = htmlspecialchars($translateData[$original], ENT_QUOTES);
+                $translate = htmlspecialchars($translate, ENT_QUOTES, 'UTF-8', false);
             }
 
             //replace original to translate phrase
