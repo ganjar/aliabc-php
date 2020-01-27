@@ -17,7 +17,7 @@ class IgnoreHtmlTagsPreProcessor extends PreProcessorAbstract
      * IgnoreHtmlTagsPreProcessor constructor.
      * @param array $ignoreTags
      */
-    public function __construct(array $ignoreTags)
+    public function __construct(array $ignoreTags = ['script', 'style'])
     {
         $this->ignoreTags = $ignoreTags;
     }
