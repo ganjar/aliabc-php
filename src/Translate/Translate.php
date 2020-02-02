@@ -4,7 +4,6 @@
 namespace ALI\Translate;
 
 
-use ALI\Event;
 use ALI\Exceptions\ALIException;
 use ALI\Translate\Language\LanguageInterface;
 use ALI\Translate\OriginalProcessors\OriginalProcessorInterface;
@@ -169,13 +168,16 @@ class Translate
 
         foreach ($searchPhrases as $originalPhrase => $searchPhrase) {
             $translate = isset($translatesFromSource[$searchPhrase]) ? $translatesFromSource[$searchPhrase] : '';
-            if ($translate !== '') {
-                $translate = $this->translateProcess($originalPhrase, $translate);
-            } else {
+            if ($translate === '') {
                 if (is_callable($this->getMissingTranslationCallback())) {
                     $translate = $this->getMissingTranslationCallback()($searchPhrase, $this) ?: '';
                 }
             }
+
+            if ($translate !== '') {
+                $translate = $this->translateProcess($originalPhrase, $translate);
+            }
+
             $translatesResult[$originalPhrase] = $translate;
         }
 
@@ -184,8 +186,7 @@ class Translate
 
     /**
      * Fast translate without buffers and processors
-     * @param string        $phrase
-     * @param \Closure|null $missingTranslationCallback - ($phrase, ALI $ali)
+     * @param string $phrase
      * @return string
      * @throws ALIException
      */
