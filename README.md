@@ -38,10 +38,9 @@ $language = new \ALI\Translate\Language\Language(
 //Make Translate instance
 $translate = new \ALI\Translate\Translate(
     $language,
-    $fileSource,
-    new \ALI\Event()
+    $fileSource
 );
-$translate->addOriginalProcessor(new \ALI\Translate\OriginalProcessors\TrimSpacesOriginalProcessor());
+$translate->addOriginalProcessor(new \ALI\Translate\OriginalProcessors\ReplaceNumbersOriginalProcessor());
 
 //BufferTranslate - class for parse and translate phrases in content
 $bufferTranslate = new \ALI\Buffer\BufferTranslate($translate);
@@ -68,11 +67,6 @@ $bufferTranslate->addProcessor(new \ALI\Buffer\Processors\HtmlLinkProcessor());
 $ali = new \ALI\ALIAbc();
 $ali->setTranslate($translate);
 $ali->setBufferTranslate($bufferTranslate);
-
-//events
-$ali->getEvent()->on(\ALI\Event::EVENT_MISSING_TRANSLATION, function ($phrase, \ALI\Translate\Translate $translate) {
-    //$translate->getSource()->saveToTranslateQueue($phrase);
-});
 
 //Use buffers
 $ali->iniSourceBuffering();

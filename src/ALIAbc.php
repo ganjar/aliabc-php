@@ -92,18 +92,9 @@ class ALIAbc
     }
 
     /**
-     * @return Event
-     * @throws TranslateNotDefinedException
-     */
-    public function getEvent()
-    {
-        return $this->getTranslate()->getEvent();
-    }
-
-
-    /**
      * This method starts global buffering
      * for translate all buffers in source
+     * @throws BufferTranslateNotDefinedException
      */
     public function initSourceBuffering()
     {

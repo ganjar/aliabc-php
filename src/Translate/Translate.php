@@ -10,6 +10,7 @@ use ALI\Translate\Language\LanguageInterface;
 use ALI\Translate\OriginalProcessors\OriginalProcessorInterface;
 use ALI\Translate\Sources\SourceInterface;
 use ALI\Translate\TranslateProcessors\TranslateProcessorInterface;
+use function is_callable;
 
 /**
  * Class Translate
@@ -27,10 +28,11 @@ class Translate
      */
     protected $source;
 
+
     /**
-     * @var Event
+     * @var \Closure
      */
-    protected $event;
+    protected $missingTranslationCallback;
 
     /**
      * @var OriginalProcessorInterface[]
@@ -46,13 +48,13 @@ class Translate
      * Translate constructor.
      * @param LanguageInterface $language
      * @param SourceInterface   $source
-     * @param Event             $event
+     * @param \Closure|null     $missingTranslationCallback
      */
-    public function __construct(LanguageInterface $language, SourceInterface $source, Event $event)
+    public function __construct(LanguageInterface $language, SourceInterface $source, \Closure $missingTranslationCallback = null)
     {
         $this->language = $language;
         $this->source = $source;
-        $this->event = $event;
+        $this->missingTranslationCallback = $missingTranslationCallback;
     }
 
     /**
@@ -72,11 +74,22 @@ class Translate
     }
 
     /**
-     * @return Event
+     * @return \Closure
      */
-    public function getEvent()
+    public function getMissingTranslationCallback()
     {
-        return $this->event;
+        return $this->missingTranslationCallback;
+    }
+
+    /**
+     * @param \Closure $missingTranslationCallback
+     * @return $this
+     */
+    public function setMissingTranslationCallback($missingTranslationCallback)
+    {
+        $this->missingTranslationCallback = $missingTranslationCallback;
+
+        return $this;
     }
 
     /**
@@ -135,10 +148,9 @@ class Translate
 
     /**
      * @param array         $phrases
-     * @param \Closure|null $missingTranslationCallback - ($phrase, ALI $ali)
      * @return array
      */
-    public function translateAll(array $phrases, \Closure $missingTranslationCallback = null)
+    public function translateAll(array $phrases)
     {
         $translatesResult = [];
         $searchPhrases = $originalPhrases = [];
@@ -160,9 +172,8 @@ class Translate
             if ($translate !== '') {
                 $translate = $this->translateProcess($originalPhrase, $translate);
             } else {
-                $this->getEvent()->trigger(Event::EVENT_MISSING_TRANSLATION, $searchPhrase, $this);
-                if ($missingTranslationCallback) {
-                    $translate = $missingTranslationCallback($searchPhrase, $this);
+                if (is_callable($this->getMissingTranslationCallback())) {
+                    $translate = $this->getMissingTranslationCallback()($searchPhrase, $this) ?: '';
                 }
             }
             $translatesResult[$originalPhrase] = $translate;
@@ -178,9 +189,9 @@ class Translate
      * @return string
      * @throws ALIException
      */
-    public function translate($phrase, \Closure $missingTranslationCallback = null)
+    public function translate($phrase)
     {
-        foreach ($this->translateAll([$phrase], $missingTranslationCallback) as $translate) {
+        foreach ($this->translateAll([$phrase]) as $translate) {
             return $translate;
         }
 
