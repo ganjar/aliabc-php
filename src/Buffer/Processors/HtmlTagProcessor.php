@@ -17,7 +17,9 @@ class HtmlTagProcessor extends AbstractHtmlProcessor
         //test regex https://regex101.com/r/aOX8Fo/7
         return '$
           (?:>|\A)                                      #Close tag symbol or start of string
-                (?<original>[^<>]*[\w][^<>]+)           #Translate phrase
+                \s*
+                (?<original>[^\s<>]*[\w][^<>]+)         #Translate phrase
+                \s*
   		  (?:<|\Z)                                      #Open tag symbol or end of string
         $Uxusi';
     }
