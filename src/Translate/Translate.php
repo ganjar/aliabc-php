@@ -152,6 +152,15 @@ class Translate
     public function translateAll(array $phrases)
     {
         $translatesResult = [];
+
+        if ($this->getLanguage()->getIsOriginal()) {
+            foreach ($phrases as $phrase) {
+                $translatesResult[$phrase] = '';
+            }
+
+            return $translatesResult;
+        }
+
         $searchPhrases = $originalPhrases = [];
         foreach ($phrases as $phrase) {
             if (!$phrase) {

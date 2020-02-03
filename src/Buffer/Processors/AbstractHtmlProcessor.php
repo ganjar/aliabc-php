@@ -25,6 +25,10 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
      */
     public function process($buffer, $cleanBuffer)
     {
+        if ($this->getTranslate()->getLanguage()->getIsOriginal()) {
+            return $buffer;
+        }
+
         preg_match_all($this->getFindPhrasesRegex(), $cleanBuffer, $match);
         $originalData = [
             'match'    => $match[0],
