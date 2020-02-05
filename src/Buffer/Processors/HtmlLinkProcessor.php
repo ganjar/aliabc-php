@@ -163,14 +163,27 @@ class HtmlLinkProcessor extends ProcessorAbstract
     protected function isUrlHasAllowedExtension($url)
     {
         $isAllowed = true;
+        $extension = $this->getExtensionFromUrl($url);
 
-        $urlParts = explode('.', $url);
-        if (isset($urlParts[1])) {
-            $extension = $urlParts[count($urlParts) - 1];
-
+        if ($extension) {
             $isAllowed = in_array(strtolower($extension), $this->getAllowedExtensions(), true);
         }
 
         return $isAllowed;
+    }
+
+    /**
+     * @param $url
+     * @return null|string
+     */
+    protected function getExtensionFromUrl($url)
+    {
+        $extension = null;
+
+        if (preg_match('@(?:\w|/|\A)/.*\.([a-z]+)(?:#|\?|\Z)@iU', $url, $math)) {
+            $extension = $math[1];
+        }
+
+        return $extension;
     }
 }
