@@ -28,6 +28,10 @@ class ReplaceNumbersTranslateProcessor implements TranslateProcessorInterface
             $sPos = 0;
             foreach ($symbols as $symbolKey => $symbol) {
 
+                if (!isset($tSymbols[$symbolKey])) {
+                    continue;
+                }
+
                 $sPos = strpos($translate, $tSymbols[$symbolKey], $sPos);
 
                 if ($sPos !== false) {

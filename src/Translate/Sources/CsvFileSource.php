@@ -36,7 +36,7 @@ class CsvFileSource extends SourceAbstract
     /**
      * @var array
      */
-    protected $allTranslates;
+    protected $allTranslates = [];
 
     /**
      * FileSource constructor.
@@ -83,7 +83,7 @@ class CsvFileSource extends SourceAbstract
      */
     public function getTranslate($phrase, LanguageInterface $language)
     {
-        if (is_null($this->allTranslates[$language->getAlias()])) {
+        if (!isset($this->allTranslates[$language->getAlias()]) || is_null($this->allTranslates[$language->getAlias()])) {
             $this->allTranslates[$language->getAlias()] = $this->parseLanguageFile($language->getAlias());
         }
 
