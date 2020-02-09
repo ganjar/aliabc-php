@@ -17,6 +17,8 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
      */
     protected $applyHtmlEntityEncode = true;
 
+    protected $charset = 'UTF-8';
+
     /**
      * @param string $buffer
      * @param string $cleanBuffer
@@ -53,7 +55,7 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
             $translate = $translateData[$original];
 
             if ($this->isApplyHtmlEntityEncode()) {
-                $translate = htmlspecialchars($translate, ENT_QUOTES, 'UTF-8', false);
+                $translate = htmlspecialchars($translate, ENT_QUOTES, $this->getCharset(), false);
             }
 
             //replace original to translate phrase
@@ -88,6 +90,25 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
     public function setApplyHtmlEntityEncode($applyHtmlEntityEncode)
     {
         $this->applyHtmlEntityEncode = $applyHtmlEntityEncode;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCharset()
+    {
+        return $this->charset;
+    }
+
+    /**
+     * @param string $charset
+     * @return $this
+     */
+    public function setCharset($charset)
+    {
+        $this->charset = $charset;
 
         return $this;
     }

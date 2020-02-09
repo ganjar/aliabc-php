@@ -9,6 +9,16 @@ namespace ALI\Translate\OriginalProcessors;
  */
 class HtmlEntityDecodeOriginalProcessor implements OriginalProcessorInterface
 {
+    protected $charset;
+
+    /**
+     * HtmlEntityDecodeOriginalProcessor constructor.
+     * @param $charset
+     */
+    public function __construct($charset = 'UTF-8')
+    {
+        $this->charset = $charset;
+    }
 
     /**
      * @param string $original
@@ -16,6 +26,6 @@ class HtmlEntityDecodeOriginalProcessor implements OriginalProcessorInterface
      */
     public function process($original)
     {
-        return html_entity_decode($original, ENT_QUOTES);
+        return html_entity_decode($original, ENT_QUOTES, $this->charset);
     }
 }
