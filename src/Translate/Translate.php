@@ -1,8 +1,6 @@
 <?php
 
-
 namespace ALI\Translate;
-
 
 use ALI\Exceptions\ALIException;
 use ALI\Translate\Language\LanguageInterface;
@@ -26,7 +24,6 @@ class Translate
      * @var SourceInterface
      */
     protected $source;
-
 
     /**
      * @var \Closure
@@ -54,6 +51,14 @@ class Translate
         $this->language = $language;
         $this->source = $source;
         $this->missingTranslationCallback = $missingTranslationCallback;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCurrentLanguageOriginal()
+    {
+        return $this->language->getAlias() === $this->source->getOriginalLanguage()->getAlias();
     }
 
     /**
@@ -153,7 +158,7 @@ class Translate
     {
         $translatesResult = [];
 
-        if ($this->getLanguage()->getIsOriginal()) {
+        if ($this->isCurrentLanguageOriginal()) {
             foreach ($phrases as $phrase) {
                 $translatesResult[$phrase] = '';
             }
@@ -210,8 +215,9 @@ class Translate
 
     /**
      * @param LanguageInterface $language
-     * @param string            $original
-     * @param string            $translate
+     * @param $original
+     * @param $translate
+     * @throws Sources\Exceptions\SourceException
      */
     public function saveTranslate(LanguageInterface $language, $original, $translate)
     {

@@ -4,12 +4,16 @@ namespace ALI\Translate\Sources;
 
 use ALI\Translate\Language\LanguageInterface;
 
-abstract class SourceAbstract implements SourceInterface
+/**
+ * FileSourceAbstract
+ */
+abstract class FileSourceAbstract implements SourceInterface
 {
     /**
-     * @param array             $phrases
+     * @param array $phrases
      * @param LanguageInterface $language
      * @return array
+     * @throws Exceptions\SourceException
      */
     public function getTranslates(array $phrases, LanguageInterface $language)
     {

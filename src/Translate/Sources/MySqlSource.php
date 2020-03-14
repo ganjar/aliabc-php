@@ -2,8 +2,8 @@
 
 namespace ALI\Translate\Sources;
 
+use ALI\Translate\Sources\Exceptions\SourceException;
 use PDO;
-use ALI\Exceptions\ALIException;
 use ALI\Translate\Language\LanguageInterface;
 use ALI\Translate\Sources\Exceptions\MySqlSource\LanguageNotExistsException;
 
@@ -11,52 +11,118 @@ use ALI\Translate\Sources\Exceptions\MySqlSource\LanguageNotExistsException;
  * Class MySqlSource
  * @package ALI\Sources
  */
-class MySqlSource extends PdoSourceAbstract
+class MySqlSource implements SourceInterface
 {
     /**
-     * @param string            $phrase
-     * @param LanguageInterface $language
-     * @return string
-     * @throws ALIException
+     * @var \PDO
      */
-    public function getTranslate($phrase, LanguageInterface $language)
-    {
-        foreach ($this->getTranslates([$phrase], $language) as $translate) {
-            return $translate;
-        }
+    private $pdo;
 
-        throw new ALIException('Empty list of translated phrases');
+    /**
+     * @var LanguageInterface
+     */
+    private $originalLanguage;
+
+    /**
+     * @var string
+     */
+    private $originalTableName;
+
+    /**
+     * @var string
+     */
+    private $translateTableName;
+
+    /**
+     * @param PDO $pdo
+     * @param LanguageInterface $originalLanguage
+     * @param string $originalTableName
+     * @param string $translateTableName
+     */
+    public function __construct(
+        PDO $pdo,
+        LanguageInterface $originalLanguage,
+        $originalTableName = 'ali_original',
+        $translateTableName = 'ali_translate'
+    )
+    {
+        $this->pdo = $pdo;
+        $this->originalLanguage = $originalLanguage;
+        $this->originalTableName = $originalTableName;
+        $this->translateTableName = $translateTableName;
     }
 
     /**
-     * @param array             $phrases
+     * @return LanguageInterface
+     */
+    public function getOriginalLanguage()
+    {
+        return $this->originalLanguage;
+    }
+
+    /**
+     * @param string $phrase
+     * @param LanguageInterface $language
+     * @return string
+     * @throws SourceException
+     */
+    public function getTranslate($phrase, LanguageInterface $language)
+    {
+        $translates = $this->getTranslates([$phrase], $language);
+        if ($translates) {
+            return current($translates);
+        }
+
+        throw new SourceException('Empty list of translated phrases');
+    }
+
+    /**
+     * @param array $phrases
      * @param LanguageInterface $language
      * @return array
      */
     public function getTranslates(array $phrases, LanguageInterface $language)
     {
-        $countPhrases = count($phrases);
-        $languageId = $this->getLanguageId($language);
-        $dataQuery = $this->getPdo()->prepare(
-            'SELECT o.`id`, o.`a`, o.`content` as `original`
-                ' . ($languageId ? ', t.`content` as `translate`' : ',NULL as `translate`') . '
-                FROM `' . $this->getTableOriginal() . '` AS `o`
-                FORCE INDEX(indexA)
-                ' . ($languageId ? 'LEFT JOIN `' . $this->getTableTranslate() . '` AS `t` ON(`o`.`id`=`t`.`original_id` AND `t`.`language_id`=:language_id)' : '') . '
-            WHERE ' . (implode('OR', array_fill(0, $countPhrases, '(o.`a`=? AND BINARY o.`content`=?)'))) . '
-            LIMIT ' . $countPhrases
-        );
-        if ($languageId) {
-            $dataQuery->bindValue('language_id', $languageId, \PDO::PARAM_INT);
+        if ($language->getAlias() === $this->originalLanguage->getAlias()) {
+            // TODO check if it's correct response
+            return array_combine($phrases, $phrases);
         }
 
-        $paramKey = 0;
-        foreach ($phrases as $phrase) {
-            $queryParams = $this->createOriginalQueryParams($phrase);
-            foreach ($queryParams as $param) {
-                $paramKey++;
-                $dataQuery->bindValue($paramKey, $param, \PDO::PARAM_STR);
-            }
+        $countPhrases = count($phrases);
+
+        $whereQuery = [];
+        $valuesForWhereBinding = [];
+        foreach ($phrases as $keyForBinding => $phrase) {
+            $contentIndexKey = 'content_index_' . $keyForBinding;
+            $contentKey = 'content_' . $keyForBinding;
+            $valuesForWhereBinding[$keyForBinding] = [
+                'phrase' => $phrase,
+                'contentIndexKey' => $contentIndexKey,
+                'contentKey' => $contentKey,
+            ];
+            $whereQuery[$keyForBinding] = '(o.`content_index`=:' . $contentIndexKey . ' AND BINARY o.`content`=:' . $contentKey . ')';
+        }
+
+        $dataQuery = $this->pdo->prepare(
+            'SELECT o.`id`, o.`content_index`, o.`content` as `original`, t.`content` as `translate`
+                FROM `' . $this->originalTableName . '` AS `o`
+                FORCE INDEX(indexContentIndex)
+                LEFT JOIN `' . $this->translateTableName . '` AS `t` ON(`o`.`id`=`t`.`original_id` AND `t`.`language_alias`=:languageAlias)
+            WHERE ' . implode(' OR ', $whereQuery) . '
+            LIMIT ' . $countPhrases
+        );
+        $dataQuery->bindValue('languageAlias', $language->getAlias(), \PDO::PARAM_INT);
+
+        foreach ($valuesForWhereBinding as $dataForBinding) {
+            $originalQueryParams = $this->createOriginalQueryParams($phrase);
+
+            $contentIndexKey = $dataForBinding['contentIndexKey'];
+            $contentIndex = $originalQueryParams['contentIndex'];
+            $contentKey = $dataForBinding['contentKey'];
+            $content = $originalQueryParams['content'];
+
+            $dataQuery->bindValue($contentIndexKey, $contentIndex, \PDO::PARAM_STR);
+            $dataQuery->bindValue($contentKey, $content, \PDO::PARAM_STR);
         }
 
         $dataQuery->execute();
@@ -83,92 +149,18 @@ class MySqlSource extends PdoSourceAbstract
      */
     protected function createOriginalQueryParams($phrase)
     {
-        $a = mb_substr($phrase, 0, 64, 'utf8');
+        $contentIndex = mb_substr($phrase, 0, 64, 'utf8');
 
         return [
-            'a'       => $a,
+            'contentIndex' => $contentIndex,
             'content' => $phrase,
         ];
     }
 
     /**
-     * @return array
-     */
-    public function getTables()
-    {
-        return [
-            'original'  => 'ali_original',
-            'translate' => 'ali_translate',
-        ];
-    }
-
-    /**
-     * @return string
-     */
-    public function getTableOriginal()
-    {
-        return $this->getTables()['original'];
-    }
-
-    /**
-     * @return string
-     */
-    public function getTableTranslate()
-    {
-        return $this->getTables()['translate'];
-    }
-
-    /**
-     * @return bool
-     */
-    public function isInstalled()
-    {
-        return $this->getPdo()->query(
-            'select COUNT(*) from information_schema.tables where table_schema=DATABASE() AND TABLE_NAME="ali_original"'
-        )->fetchColumn() ? true : false;
-    }
-
-    /**
-     * @return bool
-     */
-    public function install()
-    {
-        return $this->executeSqlFile('install.sql');
-    }
-
-    protected function getMigrationDataDir()
-    {
-        return implode(DIRECTORY_SEPARATOR, [
-            __DIR__,
-            'data',
-            'mysql',
-        ]);
-    }
-
-    /**
-     * @param $fileName
-     * @return bool
-     */
-    protected function executeSqlFile($fileName)
-    {
-        $sqlCommands = explode(';', trim(file_get_contents(
-            $this->getMigrationDataDir() . DIRECTORY_SEPARATOR . $fileName
-        )));
-
-        foreach ($sqlCommands as $sqlCommand) {
-            if (!$sqlCommand) {
-                continue;
-            }
-            $this->getPdo()->exec($sqlCommand);
-        }
-
-        return true;
-    }
-
-    /**
      * @param LanguageInterface $language
-     * @param string            $original
-     * @param string            $translate
+     * @param string $original
+     * @param string $translate
      * @throws LanguageNotExistsException
      */
     public function saveTranslate(LanguageInterface $language, $original, $translate)
@@ -187,7 +179,7 @@ class MySqlSource extends PdoSourceAbstract
      */
     public function getLanguageId(LanguageInterface $language)
     {
-        $statement = $this->getPdo()->prepare("
+        $statement = $this->pdo->prepare("
                 SELECT id FROM ali_language WHERE alias=:alias
             ");
         $statement->bindValue('alias', $language->getAlias());
@@ -203,9 +195,9 @@ class MySqlSource extends PdoSourceAbstract
      */
     public function getOriginalId($original)
     {
-        $statement = $this->getPdo()->prepare("
-                SELECT id FROM ali_original WHERE a=:a AND content=:content
-            ");
+        $statement = $this->pdo->prepare('
+                SELECT id FROM `' . $this->originalTableName . '` WHERE content_index=:contentIndex AND content=:content
+            ');
         $queryParams = $this->createOriginalQueryParams($original);
         foreach ($queryParams as $queryKey => $queryParam) {
             $statement->bindValue($queryKey, $queryParam);
@@ -222,8 +214,8 @@ class MySqlSource extends PdoSourceAbstract
      */
     public function insertOriginal($original)
     {
-        $statement = $this->getPdo()->prepare(
-            'INSERT INTO `' . $this->getTableOriginal() . '` (`a`, `content`) VALUES (:a, :content)'
+        $statement = $this->pdo->prepare(
+            'INSERT INTO `' . $this->originalTableName . '` (`content_index`, `content`) VALUES (:contentIndex, :content)'
         );
 
         $queryParams = $this->createOriginalQueryParams($original);
@@ -233,7 +225,7 @@ class MySqlSource extends PdoSourceAbstract
 
         $statement->execute();
 
-        return $this->getPdo()->lastInsertId();
+        return $this->pdo->lastInsertId();
     }
 
     /**
@@ -242,9 +234,9 @@ class MySqlSource extends PdoSourceAbstract
      */
     public function delete($original)
     {
-        $statement = $this->getPdo()->prepare("
-                DELETE FROM `ali_original` WHERE a=:a AND content=:content
-            ");
+        $statement = $this->pdo->prepare('
+                DELETE FROM `' . $this->originalTableName . '` WHERE content_index=:contentIndex AND content=:content
+            ');
         $queryParams = $this->createOriginalQueryParams($original);
         foreach ($queryParams as $queryKey => $queryParam) {
             $statement->bindValue($queryKey, $queryParam);
@@ -254,25 +246,21 @@ class MySqlSource extends PdoSourceAbstract
 
     /**
      * @param LanguageInterface $language
-     * @param int               $originalId
-     * @param string            $translate
+     * @param int $originalId
+     * @param string $translate
      * @throws LanguageNotExistsException
      */
     public function saveTranslateByOriginalId(LanguageInterface $language, $originalId, $translate)
     {
-        $languageId = $this->getLanguageId($language);
-        if ($languageId === false) {
-            throw new LanguageNotExistsException('Language does not exists');
-        }
-
-        $updatePdo = $this->getPdo()->prepare("
-                INSERT INTO `ali_translate` (`original_id`, `language_id`, `content`)
-                VALUES (:id, :langId, :content)
+        $updatePdo = $this->pdo->prepare('
+                INSERT INTO `' . $this->translateTableName . '` (`original_id`, `language_alias`, `content`)
+                VALUES (:id, :languageAlias, :content)
                 ON DUPLICATE KEY UPDATE `content`=:content
-            ");
+            ');
         $updatePdo->bindParam(':content', $translate, PDO::PARAM_STR);
         $updatePdo->bindParam(':id', $originalId, PDO::PARAM_INT);
-        $updatePdo->bindParam(':langId', $languageId, PDO::PARAM_INT);
+        $languageAlias = $language->getAlias();
+        $updatePdo->bindParam(':languageAlias', $languageAlias, PDO::PARAM_STR);
         $updatePdo->execute();
     }
 }

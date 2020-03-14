@@ -1,8 +1,6 @@
 <?php
 
-
 namespace ALI\Helpers;
-
 
 use function in_array;
 use function is_null;

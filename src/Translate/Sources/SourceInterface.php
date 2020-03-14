@@ -3,13 +3,23 @@
 namespace ALI\Translate\Sources;
 
 use ALI\Translate\Language\LanguageInterface;
+use ALI\Translate\Sources\Exceptions\SourceException;
 
+/**
+ * SourceInterface Interface
+ */
 interface SourceInterface
 {
+    /**
+     * @return LanguageInterface
+     */
+    public function getOriginalLanguage();
+
     /**
      * @param string            $phrase
      * @param LanguageInterface $language
      * @return string
+     * @throws SourceException
      */
     public function getTranslate($phrase, LanguageInterface $language);
 
@@ -26,6 +36,7 @@ interface SourceInterface
      * @param LanguageInterface $language
      * @param string            $original
      * @param string            $translate
+     * @throws SourceException
      */
     public function saveTranslate(LanguageInterface $language, $original, $translate);
 

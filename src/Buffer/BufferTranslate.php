@@ -144,19 +144,19 @@ class BufferTranslate
     public function translateAllAndReplaceInSource($content)
     {
         //The maximum number of iterations to find the buffer identifier in other buffers
-        $maxIterations = count($this->getBuffer()->getBuffers());
+        $maxIterations = count($this->getBuffer()->getBuffersContent());
 
         for ($i = 0; $i < $maxIterations; $i++) {
-            $buffers = $this->getBuffer()->getBuffers();
+            $buffersContent = $this->getBuffer()->getBuffersContent();
 
             $findSuccess = false;
-            foreach ($buffers as $bufferId => $buffer) {
+            foreach ($buffersContent as $bufferId => $bufferContent) {
                 $bufferKey = $this->getBuffer()->getBufferKey($bufferId);
                 if (strpos($content, $bufferKey) !== false) {
-                    $buffer = $this->translateBuffer($buffer);
+                    $translateBufferContent = $this->translateContent($bufferContent);
                     $content = str_replace(
                         $bufferKey,
-                        $buffer,
+                        $translateBufferContent,
                         $content
                     );
                     $this->getBuffer()->remove($bufferId);
@@ -178,21 +178,21 @@ class BufferTranslate
 
     /**
      * Run all processors by content
-     * @param $buffer
+     * @param string $content
      * @return string
      */
-    public function translateBuffer($buffer)
+    public function translateContent($content)
     {
-        $cleanBuffer = $buffer;
+        $cleanBuffer = $content;
         foreach ($this->getPreProcessors() as $preProcessor) {
             $cleanBuffer = $preProcessor->process($cleanBuffer);
         }
 
         foreach ($this->getProcessors() as $processor) {
-            $buffer = $processor->process($buffer, $cleanBuffer);
+            $content = $processor->process($content, $cleanBuffer);
         }
 
-        return $buffer;
+        return $content;
     }
 
     /**

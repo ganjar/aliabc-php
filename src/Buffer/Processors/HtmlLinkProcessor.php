@@ -77,7 +77,7 @@ class HtmlLinkProcessor extends ProcessorAbstract
      */
     public function process($buffer, $cleanBuffer)
     {
-        if ($this->getTranslate()->getLanguage()->getIsOriginal()) {
+        if ($this->getTranslate()->isCurrentLanguageOriginal()) {
             $buffer = $this->removeExceptionMark($buffer);
             return $buffer;
         }
@@ -89,7 +89,7 @@ class HtmlLinkProcessor extends ProcessorAbstract
         }
 
         $buffer = preg_replace_callback(
-            '$  
+            '$
                 (?<start><\w+       #Html tag
                     (?!\s\%\s)      #Skip exceptions
                     (?:[^>]*)\s     #Any attributes
@@ -123,7 +123,7 @@ class HtmlLinkProcessor extends ProcessorAbstract
     {
         $language = $this->getTranslate()->getLanguage();
 
-        if ($language->getIsOriginal()) {
+        if ($this->getTranslate()->isCurrentLanguageOriginal()) {
             return $url;
         }
 

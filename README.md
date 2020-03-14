@@ -15,8 +15,9 @@ $ composer require ganjar/aliabc-php
 //Set translation source - MySQL
 //$connection = new PDO("mysql:dbname=test;host=localhost", 'root', 'root');
 //$aliTranslateSource = new \ALI\Translate\Sources\MySqlSource($connection);
-//if (!$aliTranslateSource->isInstalled()) {
-//    $aliTranslateSource->install();
+//$mySqlSourceInstaller = new \ALI\Translate\Sources\MySqlSourceInstaller($connection);
+//if (!$mySqlSourceInstaller->isInstalled()) {
+//    $mySqlSourceInstaller->install();
 //}
 
 //Set CSV files as a translation source. Files in dir /lng/ with comma delimiter
