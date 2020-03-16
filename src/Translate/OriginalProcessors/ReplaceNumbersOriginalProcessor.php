@@ -2,14 +2,12 @@
 
 namespace ALI\Translate\OriginalProcessors;
 
-
 /**
  * Class ReplaceNumbersOriginalProcessor
  * @package ALI\Buffer\PreProcessors
  */
 class ReplaceNumbersOriginalProcessor implements OriginalProcessorInterface
 {
-
     /**
      * @param string $original
      * @return string

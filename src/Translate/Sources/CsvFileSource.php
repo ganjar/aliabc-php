@@ -16,12 +16,17 @@ use ALI\Translate\Sources\Exceptions\CsvFileSource\UnsupportedLanguageAliasExcep
  * Class FileSource
  * @package ALI\Translate\Sources
  */
-class CsvFileSource extends SourceAbstract
+class CsvFileSource extends FileSourceAbstract
 {
     /**
      * @var string
      */
     protected $directoryPath;
+
+    /**
+     * @var LanguageInterface
+     */
+    private $originalLanguage;
 
     /**
      * CSV delimiter - only one symbol
@@ -31,7 +36,7 @@ class CsvFileSource extends SourceAbstract
     /**
      * @var string
      */
-    protected $filesExtension = 'txt';
+    protected $filesExtension;
 
     /**
      * @var array
@@ -41,14 +46,24 @@ class CsvFileSource extends SourceAbstract
     /**
      * FileSource constructor.
      * @param string $directoryPath - Directory with source files
+     * @param LanguageInterface $originalLanguage
      * @param string $delimiter - CSV delimiter may be only one symbol
      * @param string $filesExtension
      */
-    public function __construct($directoryPath, $delimiter = ',', $filesExtension = 'csv')
+    public function __construct($directoryPath, $originalLanguage, $delimiter = ',', $filesExtension = 'csv')
     {
         $this->directoryPath = rtrim($directoryPath, '/\\');
+        $this->originalLanguage = $originalLanguage;
         $this->delimiter = $delimiter;
         $this->filesExtension = $filesExtension;
+    }
+
+    /**
+     * @return LanguageInterface
+     */
+    public function getOriginalLanguage()
+    {
+        return $this->originalLanguage;
     }
 
     /**

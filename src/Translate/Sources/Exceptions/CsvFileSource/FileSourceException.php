@@ -1,12 +1,13 @@
 <?php
 
-
 namespace ALI\Translate\Sources\Exceptions\CsvFileSource;
 
+use ALI\Translate\Sources\Exceptions\SourceException;
 
-use ALI\Exceptions\ALIException;
-
-class FileSourceException extends ALIException
+/**
+ * FileSourceException
+ */
+class FileSourceException extends SourceException
 {
 
 }

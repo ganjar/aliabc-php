@@ -8,6 +8,9 @@ namespace ALI\Buffer\Processors;
  */
 class HtmlAttributesProcessor extends AbstractHtmlProcessor
 {
+    /**
+     * @var array
+     */
     protected $allowAttributes = [];
 
     /**

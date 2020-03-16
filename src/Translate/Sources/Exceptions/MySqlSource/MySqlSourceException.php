@@ -1,12 +1,13 @@
 <?php
 
-
 namespace ALI\Translate\Sources\Exceptions\MySqlSource;
 
+use ALI\Translate\Sources\Exceptions\SourceException;
 
-use ALI\Exceptions\ALIException;
-
-class MySqlSourceException extends ALIException
+/**
+ * MySqlSourceException
+ */
+class MySqlSourceException extends SourceException
 {
 
 }

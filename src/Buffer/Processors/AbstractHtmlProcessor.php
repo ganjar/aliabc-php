@@ -17,6 +17,9 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
      */
     protected $applyHtmlEntityEncode = true;
 
+    /**
+     * @var string
+     */
     protected $charset = 'UTF-8';
 
     /**
@@ -27,7 +30,7 @@ abstract class AbstractHtmlProcessor extends ProcessorAbstract
      */
     public function process($buffer, $cleanBuffer)
     {
-        if ($this->getTranslate()->getLanguage()->getIsOriginal()) {
+        if ($this->getTranslate()->isCurrentLanguageOriginal()) {
             return $buffer;
         }
 

@@ -2,23 +2,29 @@
 
 namespace ALI\Translate\Language;
 
+/**
+ * Language
+ */
 class Language implements LanguageInterface
 {
+    /**
+     * @var string
+     */
     protected $alias;
-    protected $title;
-    protected $isOriginal = false;
 
     /**
-     * Language constructor.
+     * @var string
+     */
+    protected $title;
+
+    /**
      * @param string $alias
      * @param string $title
-     * @param bool   $isOriginal
      */
-    public function __construct($alias, $title = '', $isOriginal = false)
+    public function __construct($alias, $title = '')
     {
         $this->alias = $alias;
         $this->title = $title;
-        $this->isOriginal = $isOriginal;
     }
 
     /**
@@ -35,13 +41,5 @@ class Language implements LanguageInterface
     public function getTitle()
     {
         return $this->title;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getIsOriginal()
-    {
-        return $this->isOriginal;
     }
 }

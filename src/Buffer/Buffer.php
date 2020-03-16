@@ -11,7 +11,7 @@ class Buffer
     /**
      * @var array
      */
-    protected $buffers = [];
+    protected $buffersContent = [];
 
     /**
      * Buffering content in callback function
@@ -29,23 +29,23 @@ class Buffer
      */
     public function start()
     {
-        ob_start(function ($buffer) {
-            return $this->add($buffer);
+        ob_start(function ($bufferContent) {
+            return $this->add($bufferContent);
         });
     }
 
     /**
      * Add buffer and get string buffer key
      * (after translate we replace this key to content)
-     * @param $buffer
+     * @param string $bufferContent
      * @return string
      */
-    public function add($buffer)
+    public function add($bufferContent)
     {
-        $bufferId = count($this->buffers);
-        $this->buffers[$bufferId] = $buffer;
+        $bufferContentId = count($this->buffersContent);
+        $this->buffersContent[$bufferContentId] = $bufferContent;
 
-        return $this->getBufferKey($bufferId);
+        return $this->getBufferKey($bufferContentId);
     }
 
     /**
@@ -66,34 +66,34 @@ class Buffer
     }
 
     /**
-     * @param $bufferId
-     * @return string|bool
+     * @param string $bufferContentId
+     * @return string|false
      */
-    public function getBuffer($bufferId)
+    public function getBufferContent($bufferContentId)
     {
-        return !empty($this->buffers[$bufferId]) ? $this->buffers[$bufferId] : false;
+        return !empty($this->buffersContent[$bufferContentId]) ? $this->buffersContent[$bufferContentId] : false;
     }
 
     /**
      * @return array
      */
-    public function getBuffers()
+    public function getBuffersContent()
     {
-        return $this->buffers;
+        return $this->buffersContent;
     }
 
     /**
-     * @param $bufferId
+     * @param $bufferContentId
      */
-    public function remove($bufferId)
+    public function remove($bufferContentId)
     {
-        if (isset($this->buffers[$bufferId])) {
-            unset($this->buffers[$bufferId]);
+        if (isset($this->buffersContent[$bufferContentId])) {
+            unset($this->buffersContent[$bufferContentId]);
         }
     }
 
     public function clear()
     {
-        $this->buffers = [];
+        $this->buffersContent = [];
     }
 }

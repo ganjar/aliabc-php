@@ -2,6 +2,9 @@
 
 namespace ALI\Translate\Language;
 
+/**
+ * LanguageInterface Interface
+ */
 interface LanguageInterface
 {
     /**
@@ -15,11 +18,4 @@ interface LanguageInterface
      * @return string
      */
     function getAlias();
-
-    /**
-     * Get is language occur original language for content.
-     * In this case - we does not need translation and always return original content.
-     * @return bool
-     */
-    function getIsOriginal();
 }

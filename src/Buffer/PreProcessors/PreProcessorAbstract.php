@@ -2,7 +2,6 @@
 
 namespace ALI\Buffer\PreProcessors;
 
-
 /**
  * Interface ProcessorInterface
  * @package ALI\Processors
