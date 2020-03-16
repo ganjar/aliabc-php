@@ -2,12 +2,11 @@
 
 namespace ALI;
 
-use ALI\Buffer\Buffer;
 use ALI\Buffer\BufferTranslate;
 use ALI\Exceptions\BufferTranslateNotDefinedException;
 use ALI\Exceptions\TranslateNotDefinedException;
 use ALI\Translate\Language\LanguageInterface;
-use ALI\Translate\Translate;
+use ALI\Translate\Translators\TranslatorInterface;
 
 /**
  * Class ALI
@@ -16,9 +15,9 @@ use ALI\Translate\Translate;
 class ALIAbc
 {
     /**
-     * @var Translate
+     * @var TranslatorInterface
      */
-    protected $translate;
+    protected $translator;
 
     /**
      * @var BufferTranslate
@@ -50,36 +49,27 @@ class ALIAbc
     }
 
     /**
-     * @return Buffer
-     * @throws BufferTranslateNotDefinedException
-     */
-    public function getBuffer()
-    {
-        return $this->getBufferTranslate()->getBuffer();
-    }
-
-    /**
-     * @param Translate $translate
+     * @param TranslatorInterface $translator
      * @return $this
      */
-    public function setTranslate(Translate $translate)
+    public function setTranslator(TranslatorInterface $translator)
     {
-        $this->translate = $translate;
+        $this->translator = $translator;
 
         return $this;
     }
 
     /**
-     * @return Translate
+     * @return TranslatorInterface
      * @throws TranslateNotDefinedException
      */
-    public function getTranslate()
+    public function getTranslator()
     {
-        if (!$this->translate) {
+        if (!$this->translator) {
             throw new TranslateNotDefinedException('Translate is not defined');
         }
 
-        return $this->translate;
+        return $this->translator;
     }
 
     /**
@@ -88,16 +78,6 @@ class ALIAbc
      */
     public function getLanguage()
     {
-        return $this->getTranslate()->getLanguage();
-    }
-
-    /**
-     * This method starts global buffering
-     * for translate all buffers in source
-     * @throws BufferTranslateNotDefinedException
-     */
-    public function initSourceBuffering()
-    {
-        $this->getBufferTranslate()->initBuffering();
+        return $this->getTranslator()->getLanguage();
     }
 }

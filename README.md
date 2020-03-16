@@ -47,26 +47,26 @@ $translate->addOriginalProcessor(new \ALI\Translate\OriginalProcessors\ReplaceNu
 $bufferTranslate = new \ALI\Buffer\BufferTranslate($translate);
 
 //PreProcessors - hide some content parts from buffer processors
-$bufferTranslate->addPreProcessor(new \ALI\Buffer\PreProcessors\IgnoreHtmlTagsPreProcessor(['style', 'script']));
-$bufferTranslate->addPreProcessor(new \ALI\Buffer\PreProcessors\HtmlCommentPreProcessor());
-$bufferTranslate->addPreProcessor(new \ALI\Buffer\PreProcessors\SliIgnoreTagPreProcessor());
+$bufferTranslate->addPreProcessor(new \ALI\Processors\PreProcessors\IgnoreHtmlTagsPreProcessor(['style', 'script']));
+$bufferTranslate->addPreProcessor(new \ALI\Processors\PreProcessors\HtmlCommentPreProcessor());
+$bufferTranslate->addPreProcessor(new \ALI\Processors\PreProcessors\SliIgnoreTagPreProcessor());
 
 //Add buffer processor for parse content in HTML tags
-$bufferTranslate->addProcessor(new \ALI\Buffer\Processors\HtmlTagProcessor());
+$bufferTranslate->addProcessor(new \ALI\Processors\TranslateProcessors\HtmlTagProcessor());
 
 //Add buffer processor for parse phrases in custom tags
 //$bufferTranslate->addProcessor(new CustomTagProcessor('[[', ']]'));
 
 //Add processor for translate html attributes content
-$aliHtmlAttributesProcessor = new \ALI\Buffer\Processors\HtmlAttributesProcessor();
+$aliHtmlAttributesProcessor = new \ALI\Processors\TranslateProcessors\HtmlAttributesProcessor();
 $aliHtmlAttributesProcessor->setAllowAttributes(['title', 'alt', 'rel']);
 $bufferTranslate->addProcessor($aliHtmlAttributesProcessor);
 
 //Add processor for replace language in URLs
-$bufferTranslate->addProcessor(new \ALI\Buffer\Processors\HtmlLinkProcessor());
+$bufferTranslate->addProcessor(new \ALI\Processors\TranslateProcessors\HtmlLinkProcessor());
 
 $ali = new \ALI\ALIAbc();
-$ali->setTranslate($translate);
+$ali->setTranslator($translate);
 $ali->setBufferTranslate($bufferTranslate);
 
 //Use buffers
@@ -93,7 +93,7 @@ echo $ali->getBuffer()->buffering(function () {
 });
 
 //Quick translation of a specific phrase
-echo $ali->getTranslate()->translate('Hello word');
+echo $ali->getTranslator()->translate('Hello word');
 
 //Buffering all next content
 $ali->getBuffer()->start();

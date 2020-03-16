@@ -1,15 +1,18 @@
 <?php
 
-namespace ALI\Buffer\Processors;
+namespace ALI\Processors\TranslateProcessors;
+
+use ALI\Translate\Translators\Translator;
+use ALI\Translate\Translators\TranslatorInterface;
 
 /**
  * You may use this processor if you want to store information about language in URL.
  * Processor replace all links to links with current language (/about/ -> /ru/about/)
  * You can use " % " after html tag name for skipping URL replacing (<a % href="/test">test</a>)
  * Class HtmlLinkProcessor
- * @package ALI\Buffer\Processors
+ * @package ALI\Processors\TranslateProcessors
  */
-class HtmlLinkProcessor extends ProcessorAbstract
+class HtmlLinkProcessor implements TranslateProcessors
 {
     /**
      * Usually $_SERVER['HTTP_HOST']
@@ -70,16 +73,16 @@ class HtmlLinkProcessor extends ProcessorAbstract
     }
 
     /**
-     * @param string $buffer
-     * @param string $cleanBuffer
+     * @param string $content
+     * @param string $cleanContent
+     * @param TranslatorInterface $translator
      * @return string
-     * @throws \ALI\Exceptions\ALIException
      */
-    public function process($buffer, $cleanBuffer)
+    public function process($content, $cleanContent, TranslatorInterface $translator)
     {
-        if ($this->getTranslate()->isCurrentLanguageOriginal()) {
-            $buffer = $this->removeExceptionMark($buffer);
-            return $buffer;
+        if ($translator->isCurrentLanguageOriginal()) {
+            $content = $this->removeExceptionMark($content);
+            return $content;
         }
 
         $attributesRegex = [];
@@ -88,7 +91,7 @@ class HtmlLinkProcessor extends ProcessorAbstract
             $attributesRegex[] = '(?:' . preg_quote($attribute) . ')';
         }
 
-        $buffer = preg_replace_callback(
+        $content = preg_replace_callback(
             '$
                 (?<start><\w+       #Html tag
                     (?!\s\%\s)      #Skip exceptions
@@ -102,28 +105,29 @@ class HtmlLinkProcessor extends ProcessorAbstract
                     (?!\\\)\\2
                 )
                 $Usix',
-            function ($matches) {
-                return $matches['start'] . $this->getLocalizedUrl($matches['url']) . $matches['end'];
+            function ($matches) use ($translator) {
+                return $matches['start'] . $this->getLocalizedUrl($matches['url'], $translator) . $matches['end'];
             },
-            $buffer
+            $content
         );
 
-        $buffer = $this->removeExceptionMark($buffer);
+        $content = $this->removeExceptionMark($content);
 
-        return $buffer;
+        return $content;
     }
 
     /**
      * Get localized URL (only URL starts from /, //, https://, http://)
-     * @var string
+     *
+     * @param string $url
+     * @param TranslatorInterface $translator
      * @return string
-     * @throws \ALI\Exceptions\ALIException
      */
-    public function getLocalizedUrl($url)
+    public function getLocalizedUrl($url, TranslatorInterface $translator)
     {
-        $language = $this->getTranslate()->getLanguage();
+        $language = $translator->getLanguage();
 
-        if ($this->getTranslate()->isCurrentLanguageOriginal()) {
+        if ($translator->isCurrentLanguageOriginal()) {
             return $url;
         }
 

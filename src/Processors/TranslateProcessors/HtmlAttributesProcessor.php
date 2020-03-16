@@ -1,10 +1,10 @@
 <?php
 
-namespace ALI\Buffer\Processors;
+namespace ALI\Processors\TranslateProcessors;
 
 /**
  * Class HtmlAttributesProcessor
- * @package ALI\Buffer\Processors
+ * @package ALI\Processors\TranslateProcessors
  */
 class HtmlAttributesProcessor extends AbstractHtmlProcessor
 {
@@ -48,7 +48,7 @@ class HtmlAttributesProcessor extends AbstractHtmlProcessor
         //test regex https://regex101.com/r/aOX8Fo/6
         return '$
           (?:<[^>]+\s+(?:' . implode('|', $regexp) . ')\s*=\s*("|\'))   #Attributes in tag
-                \s* 
+                \s*
             		(?<original>[^<>]*)                                      #Translate content
                 \s*
   		  (?:(?!\\\)\\1)                                                     #Close attribute quote

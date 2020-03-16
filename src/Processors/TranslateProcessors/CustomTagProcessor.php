@@ -1,13 +1,15 @@
 <?php
 
-namespace ALI\Buffer\Processors;
+namespace ALI\Processors\TranslateProcessors;
 
+use ALI\Exceptions\ALIException;
+use ALI\Translate\Translators\TranslatorInterface;
 use function preg_quote;
 use function preg_replace;
 
 /**
  * Class CustomTagProcessor
- * @package ALI\Buffer\Processors
+ * @package ALI\Processors\TranslateProcessors
  */
 class CustomTagProcessor extends AbstractHtmlProcessor
 {
@@ -49,16 +51,20 @@ class CustomTagProcessor extends AbstractHtmlProcessor
     }
 
     /**
-     * @inheritdoc
+     * @param string $content
+     * @param string $cleanContent
+     * @param TranslatorInterface $translator
+     * @return string
+     * @throws ALIException
      */
-    public function process($buffer, $cleanBuffer)
+    public function process($content, $cleanContent,TranslatorInterface $translator)
     {
-        $buffer = parent::process($buffer, $cleanBuffer);
+        $content = parent::process($content, $cleanContent, $translator);
 
         if ($this->removeOpenCloseTags) {
-            $buffer = preg_replace($this->getFindPhrasesRegex(), '$1', $buffer);
+            $content = preg_replace($this->getFindPhrasesRegex(), '$1', $content);
         }
 
-        return $buffer;
+        return $content;
     }
 }

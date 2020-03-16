@@ -1,10 +1,12 @@
 <?php
 
-namespace ALI\Translate;
+namespace ALI\Translate\Translators;
 
-use ALI\Exceptions\ALIException;
 use ALI\Translate\Language\LanguageInterface;
 use ALI\Translate\OriginalProcessors\OriginalProcessorInterface;
+use ALI\Translate\PhrasePackets\OriginalPhrasePacket;
+use ALI\Translate\PhrasePackets\TranslatePhrasePacket;
+use ALI\Translate\Sources\Exceptions\SourceException;
 use ALI\Translate\Sources\SourceInterface;
 use ALI\Translate\TranslateProcessors\TranslateProcessorInterface;
 use function is_callable;
@@ -13,7 +15,7 @@ use function is_callable;
  * Class Translate
  * @package ALI
  */
-class Translate
+class Translator implements TranslatorInterface
 {
     /**
      * @var LanguageInterface
@@ -151,23 +153,24 @@ class Translate
     }
 
     /**
-     * @param array         $phrases
-     * @return array
+     * @param array|OriginalPhrasePacket $originalPhrases
+     * @return TranslatePhrasePacket
      */
-    public function translateAll(array $phrases)
+    public function translateAll($originalPhrases)
     {
-        $translatesResult = [];
+        $originalPhraseArray = $originalPhrases instanceof OriginalPhrasePacket ? $originalPhrases->getAll() : $originalPhrases;
+        $translatePhrasePacket = new TranslatePhrasePacket();
 
         if ($this->isCurrentLanguageOriginal()) {
-            foreach ($phrases as $phrase) {
-                $translatesResult[$phrase] = '';
+            foreach ($originalPhraseArray as $phrase) {
+                $translatePhrasePacket->addTranslate($phrase, null);
             }
 
-            return $translatesResult;
+            return $translatePhrasePacket;
         }
 
         $searchPhrases = $originalPhrases = [];
-        foreach ($phrases as $phrase) {
+        foreach ($originalPhraseArray as $phrase) {
             if (!$phrase) {
                 continue;
             }
@@ -181,43 +184,38 @@ class Translate
         );
 
         foreach ($searchPhrases as $originalPhrase => $searchPhrase) {
-            $translate = isset($translatesFromSource[$searchPhrase]) ? $translatesFromSource[$searchPhrase] : '';
-            if ($translate === '') {
+            $translate = isset($translatesFromSource[$searchPhrase]) ? $translatesFromSource[$searchPhrase] : null;
+            if ($translate === null) {
                 if (is_callable($this->getMissingTranslationCallback())) {
                     $translate = $this->getMissingTranslationCallback()($searchPhrase, $this) ?: '';
                 }
             }
 
-            if ($translate !== '') {
+            if ($translate !== null) {
                 $translate = $this->translateProcess($originalPhrase, $translate);
             }
 
-            $translatesResult[$originalPhrase] = $translate;
+            $translatePhrasePacket->addTranslate($originalPhrase,$translate);
         }
 
-        return $translatesResult;
+        return $translatePhrasePacket;
     }
 
     /**
      * Fast translate without buffers and processors
      * @param string $phrase
-     * @return string
-     * @throws ALIException
+     * @return null|string
      */
     public function translate($phrase)
     {
-        foreach ($this->translateAll([$phrase]) as $translate) {
-            return $translate;
-        }
-
-        throw new ALIException('Empty list of translated phrases');
+        return $this->translateAll([$phrase])->getTranslate($phrase);
     }
 
     /**
      * @param LanguageInterface $language
      * @param $original
      * @param $translate
-     * @throws Sources\Exceptions\SourceException
+     * @throws SourceException
      */
     public function saveTranslate(LanguageInterface $language, $original, $translate)
     {

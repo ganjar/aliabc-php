@@ -4,7 +4,7 @@ namespace ALI\Translate\OriginalProcessors;
 
 /**
  * Class ReplaceNumbersOriginalProcessor
- * @package ALI\Buffer\PreProcessors
+ * @package ALI\Processors\PreProcessors
  */
 class ReplaceNumbersOriginalProcessor implements OriginalProcessorInterface
 {

@@ -1,10 +1,9 @@
 <?php
 
-namespace ALI\Buffer\PreProcessors;
+namespace ALI\Processors\PreProcessors;
 
 /**
  * Interface PreProcessorInterface
- * @package ALI\PreProcessors
  */
 interface PreProcessorInterface
 {

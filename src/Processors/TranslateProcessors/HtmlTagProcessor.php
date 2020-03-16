@@ -1,10 +1,10 @@
 <?php
 
-namespace ALI\Buffer\Processors;
+namespace ALI\Processors\TranslateProcessors;
 
 /**
  * Class HtmlTagProcessor
- * @package ALI\Buffer\Processors
+ * @package ALI\Processors\TranslateProcessors
  */
 class HtmlTagProcessor extends AbstractHtmlProcessor
 {

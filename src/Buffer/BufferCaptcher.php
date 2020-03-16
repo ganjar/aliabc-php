@@ -1,0 +1,78 @@
+<?php
+
+namespace ALI\Buffer;
+
+use ALI\Buffer\KeyGenerators\StaticKeyGenerator;
+
+/**
+ * BufferCaptcher
+ */
+class BufferCaptcher
+{
+    /**
+     * @var Buffer
+     */
+    protected $buffer;
+
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer = null)
+    {
+        if ($buffer) {
+            $this->buffer = $buffer;
+        } else {
+            $keyGenerator = new StaticKeyGenerator('<!--ALI:buffer:', '-->');
+            $this->buffer = new Buffer($keyGenerator);
+        }
+    }
+
+    /**
+     * Buffering content in callback function
+     * @param \Closure $callback
+     */
+    public function buffering(\Closure $callback)
+    {
+        $this->start();
+        $callback();
+        $this->end();
+    }
+
+    /**
+     * Start buffering
+     */
+    public function start()
+    {
+        ob_start(function ($bufferContent) {
+            return $this->buffer->add(new BufferContent($bufferContent));
+        });
+    }
+
+    /**
+     * Stop buffering and get stub content
+     */
+    public function end()
+    {
+        ob_end_flush();
+    }
+
+    /**
+     * @return Buffer
+     */
+    public function getBuffer(): Buffer
+    {
+        return $this->buffer;
+    }
+
+    /**
+     * @param string $text
+     * @param Buffer|null $buffer
+     * @return string
+     */
+    public function add($text, Buffer $buffer = null)
+    {
+        $bufferContent = new BufferContent($text, $buffer);
+
+        return $this->buffer->add($bufferContent);
+    }
+}

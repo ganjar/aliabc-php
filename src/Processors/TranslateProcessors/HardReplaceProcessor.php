@@ -1,15 +1,17 @@
 <?php
 
-namespace ALI\Buffer\Processors;
+namespace ALI\Processors\TranslateProcessors;
+
+use ALI\Translate\Translators\TranslatorInterface;
 
 /**
  * This processor only replace all occurrences.
  * For example: you may replace image url from /logo.png to /ru_logo.png
  * Case sensitive search!
  * Class HardReplaceProcessor
- * @package ALI\Buffer\Processors
+ * @package ALI\Processors\TranslateProcessors
  */
-class HardReplaceProcessor extends ProcessorAbstract
+class HardReplaceProcessor implements TranslateProcessors
 {
     protected $replacements = [];
 
@@ -45,12 +47,13 @@ class HardReplaceProcessor extends ProcessorAbstract
     }
 
     /**
-     * @param string $buffer
-     * @param string $cleanBuffer
+     * @param string $content
+     * @param string $cleanContent
+     * @param TranslatorInterface $translator
      * @return string
      */
-    public function process($buffer, $cleanBuffer)
+    public function process($content, $cleanContent, TranslatorInterface $translator)
     {
-        return strtr($buffer, $this->getReplacements());
+        return strtr($content, $this->getReplacements());
     }
 }

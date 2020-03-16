@@ -1,6 +1,6 @@
 <?php
 
-namespace ALI\Buffer\PreProcessors;
+namespace ALI\Processors\PreProcessors;
 
 /**
  * Class ClearHtmlPreProcessor
