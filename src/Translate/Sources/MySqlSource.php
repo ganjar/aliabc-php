@@ -14,9 +14,9 @@ use ALI\Translate\Sources\Exceptions\MySqlSource\LanguageNotExistsException;
 class MySqlSource implements SourceInterface
 {
     /**
-     * @var \PDO
+     * @var PDO
      */
-    private $pdo;
+    protected $pdo;
 
     /**
      * @var LanguageInterface
@@ -26,12 +26,12 @@ class MySqlSource implements SourceInterface
     /**
      * @var string
      */
-    private $originalTableName;
+    protected $originalTableName;
 
     /**
      * @var string
      */
-    private $translateTableName;
+    protected $translateTableName;
 
     /**
      * @param PDO $pdo
@@ -92,9 +92,12 @@ class MySqlSource implements SourceInterface
 
         $whereQuery = [];
         $valuesForWhereBinding = [];
+        $queryIndexIncrement = 1;
         foreach ($phrases as $keyForBinding => $phrase) {
-            $contentIndexKey = 'content_index_' . $keyForBinding;
-            $contentKey = 'content_' . $keyForBinding;
+            $queryIndexIncrement++;
+            $contentIndexKey = 'content_index_' . $queryIndexIncrement;
+            $queryIndexIncrement++;
+            $contentKey = 'content_' . $queryIndexIncrement;
             $valuesForWhereBinding[$keyForBinding] = [
                 'phrase' => $phrase,
                 'contentIndexKey' => $contentIndexKey,
@@ -107,11 +110,11 @@ class MySqlSource implements SourceInterface
             'SELECT o.`id`, o.`content_index`, o.`content` as `original`, t.`content` as `translate`
                 FROM `' . $this->originalTableName . '` AS `o`
                 FORCE INDEX(indexContentIndex)
-                LEFT JOIN `' . $this->translateTableName . '` AS `t` ON(`o`.`id`=`t`.`original_id` AND `t`.`language_alias`=:languageAlias)
+                LEFT JOIN `' . $this->translateTableName . '` AS `t` ON (`o`.`id`=`t`.`original_id` AND `t`.`language_alias`=:languageAlias)
             WHERE ' . implode(' OR ', $whereQuery) . '
             LIMIT ' . $countPhrases
         );
-        $dataQuery->bindValue('languageAlias', $language->getAlias(), \PDO::PARAM_INT);
+        $dataQuery->bindValue('languageAlias', $language->getAlias(), PDO::PARAM_STR);
 
         foreach ($valuesForWhereBinding as $dataForBinding) {
             $originalQueryParams = $this->createOriginalQueryParams($phrase);
@@ -121,8 +124,8 @@ class MySqlSource implements SourceInterface
             $contentKey = $dataForBinding['contentKey'];
             $content = $originalQueryParams['content'];
 
-            $dataQuery->bindValue($contentIndexKey, $contentIndex, \PDO::PARAM_STR);
-            $dataQuery->bindValue($contentKey, $content, \PDO::PARAM_STR);
+            $dataQuery->bindValue($contentIndexKey, $contentIndex, PDO::PARAM_STR);
+            $dataQuery->bindValue($contentKey, $content, PDO::PARAM_STR);
         }
 
         $dataQuery->execute();

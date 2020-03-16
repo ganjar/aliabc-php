@@ -1,8 +1,7 @@
 CREATE TABLE ali_language (
-  alias                VARCHAR(4)          NOT NULL,
-  is_active            TINYINT(1)          NOT NULL DEFAULT 0,
+  alias                VARCHAR(4)  NOT NULL,
   title                VARCHAR(64) NOT NULL DEFAULT '',
-  auto_translate_alias VARCHAR(8)                   DEFAULT NULL,
+  is_active            TINYINT(1) NOT NULL,
   PRIMARY KEY (alias),
   UNIQUE INDEX UK_ali_lang_alias (alias)
 )

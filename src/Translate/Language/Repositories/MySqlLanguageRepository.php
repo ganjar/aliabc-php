@@ -13,12 +13,12 @@ class MySqlLanguageRepository implements LanguageRepositoryInterface
     /**
      * @var \PDO
      */
-    private $pdo;
+    protected $pdo;
 
     /**
      * @var string
      */
-    private $languageTableName;
+    protected $languageTableName;
 
     /**
      * @param \PDO $pdo
@@ -32,14 +32,17 @@ class MySqlLanguageRepository implements LanguageRepositoryInterface
 
     /**
      * @param Language $language
+     * @param bool $isActive
      * @return bool
      */
-    public function save(Language $language)
+    public function save(Language $language, $isActive)
     {
+        $isActive = (int)$isActive;
         $statement = $this->pdo->prepare('
-                INSERT `' . $this->languageTableName . '` (is_active,alias,title) VALUES (1,:alias,:title)
-                ON DUPLICATE KEY UPDATE `title`=:title
+                INSERT `' . $this->languageTableName . '` (`is_active`, `alias`, `title`) VALUES (:isActive, :alias, :title)
+                ON DUPLICATE KEY UPDATE `title`=:title, `is_active`=:isActive
             ');
+        $statement->bindValue('isActive', $isActive);
         $statement->bindValue('alias', $language->getAlias());
         $statement->bindValue('title', $language->getTitle());
 
@@ -50,10 +53,10 @@ class MySqlLanguageRepository implements LanguageRepositoryInterface
      * @param string $alias
      * @return Language|null
      */
-    public function findLanguage($alias)
+    public function find($alias)
     {
         $statement = $this->pdo->prepare('
-                SELECT * FROM `' . $this->languageTableName . '` WHERE alias=:alias AND is_active=1
+                SELECT * FROM `' . $this->languageTableName . '` WHERE alias=:alias
             ');
 
         $statement->bindValue('alias', $alias);
@@ -67,12 +70,14 @@ class MySqlLanguageRepository implements LanguageRepositoryInterface
     }
 
     /**
-     * @return Language[]
+     * @param bool $onlyActive
+     * @return Language[]|array
      */
-    public function getAllLanguages()
+    public function getAll($onlyActive)
     {
+        $onlyActive = (int)$onlyActive;
         $statement = $this->pdo->prepare('
-                SELECT * FROM `' . $this->languageTableName . '` WHERE is_active=1
+                SELECT * FROM `' . $this->languageTableName . '`' . ($onlyActive ? ' WHERE is_active=1' : null) . '
             ');
         $statement->execute();
         $languagesData = $statement->fetchAll();
@@ -89,7 +94,7 @@ class MySqlLanguageRepository implements LanguageRepositoryInterface
      * @param array $languageData
      * @return Language
      */
-    private function generateLanguageObject(array $languageData)
+    protected function generateLanguageObject(array $languageData)
     {
         return new Language($languageData['alias'], $languageData['title']);
     }

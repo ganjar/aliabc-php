@@ -12,7 +12,7 @@ class MySqlSourceInstaller
     /**
      * @var PDO
      */
-    private $pdo;
+    protected $pdo;
 
     /**
      * @param PDO $pdo

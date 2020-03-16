@@ -18,16 +18,13 @@ class Language implements LanguageInterface
     protected $title;
 
     /**
-     * Language constructor.
      * @param string $alias
      * @param string $title
-     * @param bool   $isOriginal
      */
-    public function __construct($alias, $title = '', $isOriginal = false)
+    public function __construct($alias, $title = '')
     {
         $this->alias = $alias;
         $this->title = $title;
-        $this->isOriginal = $isOriginal;
     }
 
     /**
