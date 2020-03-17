@@ -87,8 +87,9 @@ class MySqlSource implements SourceInterface
             // TODO check if it's correct response
             return array_combine($phrases, $phrases);
         }
-
-        $countPhrases = count($phrases);
+        if(!$phrases){
+            return [];
+        }
 
         $whereQuery = [];
         $valuesForWhereBinding = [];
@@ -112,12 +113,12 @@ class MySqlSource implements SourceInterface
                 FORCE INDEX(indexContentIndex)
                 LEFT JOIN `' . $this->translateTableName . '` AS `t` ON (`o`.`id`=`t`.`original_id` AND `t`.`language_alias`=:languageAlias)
             WHERE ' . implode(' OR ', $whereQuery) . '
-            LIMIT ' . $countPhrases
+            LIMIT ' . count($phrases)
         );
         $dataQuery->bindValue('languageAlias', $language->getAlias(), PDO::PARAM_STR);
 
         foreach ($valuesForWhereBinding as $dataForBinding) {
-            $originalQueryParams = $this->createOriginalQueryParams($phrase);
+            $originalQueryParams = $this->createOriginalQueryParams($dataForBinding['phrase']);
 
             $contentIndexKey = $dataForBinding['contentIndexKey'];
             $contentIndex = $originalQueryParams['contentIndex'];

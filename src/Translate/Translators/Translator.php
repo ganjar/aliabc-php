@@ -153,29 +153,27 @@ class Translator implements TranslatorInterface
     }
 
     /**
-     * @param array|OriginalPhrasePacket $originalPhrases
+     * @param array $originalPhrases
      * @return TranslatePhrasePacket
      */
     public function translateAll($originalPhrases)
     {
-        $originalPhraseArray = $originalPhrases instanceof OriginalPhrasePacket ? $originalPhrases->getAll() : $originalPhrases;
         $translatePhrasePacket = new TranslatePhrasePacket();
 
         if ($this->isCurrentLanguageOriginal()) {
-            foreach ($originalPhraseArray as $phrase) {
+            foreach ($originalPhrases as $phrase) {
                 $translatePhrasePacket->addTranslate($phrase, null);
             }
 
             return $translatePhrasePacket;
         }
 
-        $searchPhrases = $originalPhrases = [];
-        foreach ($originalPhraseArray as $phrase) {
+        $searchPhrases = [];
+        foreach ($originalPhrases as $phrase) {
             if (!$phrase) {
                 continue;
             }
             $searchPhrases[$phrase] = $this->originalProcess($phrase);
-            $originalPhrases[$searchPhrases[$phrase]] = $phrase;
         }
 
         $translatesFromSource = $this->getSource()->getTranslates(
