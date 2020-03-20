@@ -6,7 +6,7 @@ use ALI\Buffer\KeyGenerators\StaticKeyGenerator;
 use ALI\Processors\ProcessorsManager;
 use ALI\Translate\PhrasePackets\OriginalPhrasePacket;
 use ALI\Translate\PhrasePackets\TranslatePhrasePacket;
-use ALI\Translate\Translators\BufferTranslator;
+use ALI\Translate\Translators\FakeBufferTranslator;
 use ALI\Translate\Translators\Translator;
 use ALI\Translate\Translators\TranslatorInterface;
 
@@ -90,7 +90,7 @@ class BufferTranslate
     {
         // Init additional objects
         $bufferLayer = new Buffer(new StaticKeyGenerator('#ali-buffer-layer-content_', '#'));
-        $bufferLayerTranslator = new BufferTranslator(
+        $bufferLayerTranslator = new FakeBufferTranslator(
             $translator->getLanguage(),
             $translator->getSource()->getOriginalLanguage(),
             $bufferLayer

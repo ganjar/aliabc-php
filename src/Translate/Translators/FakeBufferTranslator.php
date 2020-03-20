@@ -7,9 +7,9 @@ use ALI\Translate\Language\LanguageInterface;
 use ALI\Translate\PhrasePackets\TranslatePhrasePacket;
 
 /**
- * BufferTranslator
+ * FakeBufferTranslator
  */
-class BufferTranslator implements TranslatorInterface
+class FakeBufferTranslator implements TranslatorInterface
 {
     /**
      * @var LanguageInterface

@@ -89,7 +89,7 @@ class CsvFileSource extends FileSourceAbstract
     }
 
     /**
-     * @param string            $phrase
+     * @param string $phrase
      * @param LanguageInterface $language
      * @return string
      * @throws FileReadPermissionsException
@@ -132,7 +132,7 @@ class CsvFileSource extends FileSourceAbstract
             }
 
             $fileResource = fopen($languageFile, 'r');
-            while ( ($data = fgetcsv($fileResource, 0, $this->delimiter) ) !== false ) {
+            while (($data = fgetcsv($fileResource, 0, $this->delimiter)) !== false) {
                 $translates[$data[0]] = isset($data[1]) ? $data[1] : '';
             }
             fclose($fileResource);
@@ -143,7 +143,7 @@ class CsvFileSource extends FileSourceAbstract
 
     /**
      * @param string $languageAlias
-     * @param array  $translatesData - [original => translate]
+     * @param array $translatesData - [original => translate]
      * @throws UnsupportedLanguageAliasException
      * @throws FileNotWritableException
      */
@@ -151,7 +151,7 @@ class CsvFileSource extends FileSourceAbstract
     {
         $filePath = $this->getLanguageFilePath($languageAlias);
         if (!is_writable($filePath)) {
-            throw new FileNotWritableException('File is not writable ' . $this->getDirectoryPath());
+            throw new FileNotWritableException('File is not writable ' . $filePath);
         }
 
         $fileResource = fopen($filePath, 'w');
@@ -177,6 +177,7 @@ class CsvFileSource extends FileSourceAbstract
         $translates = $this->parseLanguageFile($language->getAlias());
         $translates[$original] = $translate;
         $this->saveLanguageFile($language->getAlias(), $translates);
+        $this->allTranslates[$language->getAlias()] = $this->parseLanguageFile($language->getAlias());
     }
 
     /**
@@ -189,7 +190,7 @@ class CsvFileSource extends FileSourceAbstract
      */
     public function delete($original)
     {
-        $dataFiles = glob($this->getDirectoryPath() . DIRECTORY_SEPARATOR .  '*.' . $this->filesExtension);
+        $dataFiles = glob($this->getDirectoryPath() . DIRECTORY_SEPARATOR . '*.' . $this->filesExtension);
         foreach ($dataFiles as $file) {
             $fileInfo = pathinfo($file);
             $languageAlias = $fileInfo['filename'];
@@ -197,6 +198,11 @@ class CsvFileSource extends FileSourceAbstract
             if (key_exists($original, $translates)) {
                 unset($translates[$original]);
                 $this->saveLanguageFile($languageAlias, $translates);
+            }
+        }
+        foreach ($this->allTranslates as $languageAlias => $languageTranslateData) {
+            if (isset($this->allTranslates[$languageAlias][$original])) {
+                unset($this->allTranslates[$languageAlias][$original]);
             }
         }
     }

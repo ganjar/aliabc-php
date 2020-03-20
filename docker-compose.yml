@@ -1,0 +1,26 @@
+version: '3.3'
+services:
+
+    php:
+         image: chialab/php:7.4-fpm
+         volumes:
+            - ./:/var/www/ali/
+            - ~/.ssh:/root/.ssh:ro
+            - ~/.composer:/root/.composer/
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro
+         restart: always
+
+    mysql:
+         image: mysql:8.0.16
+         command: --default-authentication-plugin=mysql_native_password
+         environment:
+           MYSQL_ROOT_PASSWORD: root
+           MYSQL_DATABASE: test
+         volumes:
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro
+         restart: always
+
+volumes:
+  phpsocket:
