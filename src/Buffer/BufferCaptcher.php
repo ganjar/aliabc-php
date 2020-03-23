@@ -65,13 +65,13 @@ class BufferCaptcher
     }
 
     /**
-     * @param string $text
+     * @param string $content
      * @param Buffer|null $buffer
      * @return string
      */
-    public function add($text, Buffer $buffer = null)
+    public function add($content, Buffer $buffer = null)
     {
-        $bufferContent = new BufferContent($text, $buffer);
+        $bufferContent = new BufferContent($content, $buffer);
 
         return $this->buffer->add($bufferContent);
     }

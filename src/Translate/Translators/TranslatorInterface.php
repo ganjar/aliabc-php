@@ -4,6 +4,7 @@ namespace ALI\Translate\Translators;
 
 use ALI\Translate\Language\LanguageInterface;
 use ALI\Translate\PhrasePackets\TranslatePhrasePacket;
+use ALI\Translate\Sources\SourceInterface;
 
 /**
  * TranslatorInterface
@@ -31,4 +32,9 @@ interface TranslatorInterface
      * @return LanguageInterface
      */
     public function getLanguage();
+
+    /**
+     * @return SourceInterface
+     */
+    public function getSource();
 }

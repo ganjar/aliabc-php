@@ -18,7 +18,7 @@ class SourceFactory
      */
     public function createPDO()
     {
-        $connection = new PDO('mysql:dbname=test;host=mysql', 'root', 'root');
+        $connection = new PDO(SOURCE_MYSQL_DNS, SOURCE_MYSQL_USER, SOURCE_MYSQL_PASSWORD);
         $connection->setAttribute(PDO::ATTR_ERRMODE,
             PDO::ERRMODE_EXCEPTION);
 
@@ -48,8 +48,7 @@ class SourceFactory
      */
     public function createCsvSource(Language $originalLanguage)
     {
-        $dataDirectory = TEST_DATA_PATH . DIRECTORY_SEPARATOR . 'source' . DIRECTORY_SEPARATOR . 'csv';
-        $csvFileSource = new CsvFileSource($dataDirectory, $originalLanguage);
+        $csvFileSource = new CsvFileSource(SOURCE_CSV_PATH, $originalLanguage);
 
         return $csvFileSource;
     }

@@ -2,7 +2,8 @@ version: '3.3'
 services:
 
     php:
-         image: chialab/php:7.4-fpm
+         build:
+            context: ./docker/images/php
          volumes:
             - ./:/var/www/ali/
             - ~/.ssh:/root/.ssh:ro

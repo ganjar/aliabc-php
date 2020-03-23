@@ -6,7 +6,7 @@ use ALI\Buffer\KeyGenerators\StaticKeyGenerator;
 use ALI\Processors\ProcessorsManager;
 use ALI\Translate\PhrasePackets\OriginalPhrasePacket;
 use ALI\Translate\PhrasePackets\TranslatePhrasePacket;
-use ALI\Translate\Translators\FakeBufferTranslator;
+use ALI\Translate\Sources\FakeBufferSource;
 use ALI\Translate\Translators\Translator;
 use ALI\Translate\Translators\TranslatorInterface;
 
@@ -20,10 +20,10 @@ class BufferTranslate
      * Translates all buffer contents, and replace their in parent content
      *
      * @param BufferContent $bufferContent
-     * @param Translator $translator
+     * @param TranslatorInterface $translator
      * @return string
      */
-    public function translateBuffer(BufferContent $bufferContent, Translator $translator)
+    public function translateBuffer(BufferContent $bufferContent, TranslatorInterface $translator)
     {
         if (!$bufferContent->getBuffer()) {
             return $bufferContent->getContentString();
@@ -83,18 +83,16 @@ class BufferTranslate
      * But this method create more php actions with content replacing
      *
      * @param BufferContent $bufferContent
-     * @param Translator $translator
+     * @param TranslatorInterface $translator
      * @return string
      */
-    public function translateBuffersWithProcessorsByOneRequest(BufferContent $bufferContent, Translator $translator, ProcessorsManager $processorsManager)
+    public function translateBuffersWithProcessorsByOneRequest(BufferContent $bufferContent, TranslatorInterface $translator, ProcessorsManager $processorsManager)
     {
         // Init additional objects
         $bufferLayer = new Buffer(new StaticKeyGenerator('#ali-buffer-layer-content_', '#'));
-        $bufferLayerTranslator = new FakeBufferTranslator(
-            $translator->getLanguage(),
-            $translator->getSource()->getOriginalLanguage(),
-            $bufferLayer
-        );
+
+        $fakeBufferSource = new FakeBufferSource($translator->getSource()->getOriginalLanguage(), $bufferLayer);
+        $bufferLayerTranslator = new Translator($translator->getLanguage(),$fakeBufferSource);
 
         // Create additional buffering layer
         $layerContent = $this->translateBuffersWithProcessors($bufferContent, $bufferLayerTranslator, $processorsManager);

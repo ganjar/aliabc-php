@@ -7,100 +7,57 @@
 $ composer require ganjar/aliabc-php
 ```
 
+## Quick start
+First of all, you need choose type of translation source, which you will be used.
+From the box, in this packet you may use:
+* MysqlSource
+* CsvSource
+
+For first use simplification , we created `QuickStartALIAbFactory`, which creates for you instance of `ALIAbc`, which is facade Class, with general configuration.<br>
+Exist two base type of using this packet:
+* with html auto translation. In this cast you may put to buffer full html text, and ALIAb search and translate all phrases
+    * With MySql source 
+    ```php
+    $aliAbc = (new QuickStartALIAbFactory)->createHtmlBufferMysqlSource((new PDO('mysql:dbname=test;host=mysql', 'root', 'root')),'en','ua');
+    ```
+    * With CSV source 
+    ```php
+    $aliAbc = (new QuickStartALIAbFactory)->createHtmlBufferCsvSource('/path/to/writable/directory/for/translation','en','ua'));
+    ```
+* manually adding text for translation in html
+    * With MySql source 
+    ```php
+    $aliAbc = (new QuickStartALIAbFactory)->createMysqlSource((new PDO('mysql:dbname=test;host=mysql', 'root', 'root')),'en','ua');
+    ```
+    * With CSV source 
+    ```php
+    $aliAbc = (new QuickStartALIAbFactory)->createCsvSource('/path/to/writable/directory/for/translation','en','ua'))
+    ```
+
+
 ## Basic Usage
 
 ```php
-<?php
+$aliAbc = (new QuickStartALIAbFactory)->createHtmlBufferMysqlSource((new PDO('mysql:dbname=test;host=mysql', 'root', 'root')),'en','ua');
+$aliAbc->saveTranslate('Hello', 'Привіт');
 
-//Set translation source - MySQL
-//$connection = new PDO("mysql:dbname=test;host=localhost", 'root', 'root');
-//$aliTranslateSource = new \ALI\Translate\Sources\MySqlSource($connection);
-//$mySqlSourceInstaller = new \ALI\Translate\Sources\MySqlSourceInstaller($connection);
-//if (!$mySqlSourceInstaller->isInstalled()) {
-//    $mySqlSourceInstaller->install();
-//}
+// Dirrect translation
+echo $aliAbc->translate('Hello');
+var_dump($aliAbc->translateAll(['Hello']));
 
-//Set CSV files as a translation source. Files in dir /lng/ with comma delimiter
-$fileSource = new \ALI\Translate\Sources\CsvFileSource(__DIR__ . '/lng/', ",", 'txt');
+// Translate in html, using buffer, for translation at end, by one request for Source
+$html =  '<div>' . $aliAbc->addToBuffer('Hello') . '</div>';
+echo $html; // '<div>#ali-buffer-layer-content_0#</div>'
+echo $aliAbc->translateBuffer($html); // '<div>Привіт</div>'
 
-//Parse language
-$languageAlias = false;
-if (preg_match('#^/(?<language>\w{2})/#', $_SERVER['REQUEST_URI'], $parseUriMatches)) {
-    $languageAlias = $parseUriMatches['language'];
-}
+// If you choose type with auto html translation, you may put full html code for tanslate
+$html =  $aliAbc->addToBuffer('<div>Hello</div>');
+echo $aliAbc->translateBuffer($html); // '<div>Привіт</div>'
 
-//Set language
-$language = new \ALI\Translate\Language\Language(
-    $languageAlias, 
-    '', 
-    $languageAlias == 'en' || !$languageAlias
-);
 
-//Make Translate instance
-$translate = new \ALI\Translate\Translate(
-    $language,
-    $fileSource
-);
-$translate->addOriginalProcessor(new \ALI\Translate\OriginalProcessors\ReplaceNumbersOriginalProcessor());
-
-//BufferTranslate - class for parse and translate phrases in content
-$bufferTranslate = new \ALI\Buffer\BufferTranslate($translate);
-
-//PreProcessors - hide some content parts from buffer processors
-$bufferTranslate->addPreProcessor(new \ALI\Processors\PreProcessors\IgnoreHtmlTagsPreProcessor(['style', 'script']));
-$bufferTranslate->addPreProcessor(new \ALI\Processors\PreProcessors\HtmlCommentPreProcessor());
-$bufferTranslate->addPreProcessor(new \ALI\Processors\PreProcessors\SliIgnoreTagPreProcessor());
-
-//Add buffer processor for parse content in HTML tags
-$bufferTranslate->addProcessor(new \ALI\Processors\TranslateProcessors\HtmlTagProcessor());
-
-//Add buffer processor for parse phrases in custom tags
-//$bufferTranslate->addProcessor(new CustomTagProcessor('[[', ']]'));
-
-//Add processor for translate html attributes content
-$aliHtmlAttributesProcessor = new \ALI\Processors\TranslateProcessors\HtmlAttributesProcessor();
-$aliHtmlAttributesProcessor->setAllowAttributes(['title', 'alt', 'rel']);
-$bufferTranslate->addProcessor($aliHtmlAttributesProcessor);
-
-//Add processor for replace language in URLs
-$bufferTranslate->addProcessor(new \ALI\Processors\TranslateProcessors\HtmlLinkProcessor());
-
-$ali = new \ALI\ALIAbc();
-$ali->setTranslator($translate);
-$ali->setBufferTranslate($bufferTranslate);
-
-//Use buffers
-$ali->iniSourceBuffering();
-
-//start/end
-$ali->getBuffer()->start();
-echo '<b>Hello word</b>';
-$ali->getBuffer()->end();
-
-//Without translate because outside buffer
-echo '<b>Without translate content</b>';
-
-$ali->getBuffer()->start();
-echo '<b>Translated content inside buffer</b>';
-$ali->getBuffer()->end();
-
-//simple add buffer
-echo $ali->getBuffer()->add('<b>Hello word 3</b>');
-
-//Buffering all content inside callback function
-echo $ali->getBuffer()->buffering(function () {
-    echo '<b>Hello word 4</b>';
-});
-
-//Quick translation of a specific phrase
-echo $ali->getTranslator()->translate('Hello word');
-
-//Buffering all next content
-$ali->getBuffer()->start();
-
-//Fast translate
-//echo $ali->getTranslate()->translate('Hello word');
-//Save translate
-//$ali->getTranslate()->saveTranslate($language, 'Hello word', 'Привет мир');
-
-return $ali;
+// Also you may discover object $aliAbc->getBufferCaptcher() for additional method for work with buffer
+$aliAbc->getBufferCaptcher()->start();
+echo '<div>Hello</div>';
+$aliAbc->getBufferCaptcher()->end();
+echo $aliAbc->translateBuffer(); // '<div>Привіт</div>'
+```
