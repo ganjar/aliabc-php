@@ -12,16 +12,16 @@ use ALI\Translate\Sources\SourceInterface;
 interface TranslatorInterface
 {
     /**
-     * @param array $originalPhrases
+     * @param array $phrases
      * @return TranslatePhrasePacket
      */
-    public function translateAll($originalPhrases);
+    public function translateAll($phrases);
 
     /**
-     * @param string $originalPhrase
+     * @param string $phrase
      * @return string
      */
-    public function translate($originalPhrase);
+    public function translate($phrase);
 
     /**
      * @return bool

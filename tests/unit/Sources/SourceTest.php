@@ -2,6 +2,7 @@
 
 namespace ALI\Tests\unit\Sources;
 
+use ALI\Tests\components\Factories\LanguageFactory;
 use ALI\Tests\components\Factories\SourceFactory;
 use ALI\Tests\components\SourceTester;
 use ALI\Translate\Language\Language;
@@ -18,7 +19,7 @@ class SourceTest extends TestCase
      */
     public function test()
     {
-        $originalLanguage = new Language('en', 'English');
+        $originalLanguage = (new LanguageFactory())->getOriginalLanguage();
 
         $this->checkMysqlSource($originalLanguage);
         $this->checkCsvSource($originalLanguage);

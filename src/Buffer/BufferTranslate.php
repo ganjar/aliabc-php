@@ -29,13 +29,27 @@ class BufferTranslate
             return $bufferContent->getContentString();
         }
 
-        $originalsPacket = new OriginalPhrasePacket();
-        foreach ($bufferContent->getBuffer()->getBuffersContent() as $childBufferContent) {
-            $originalsPacket->add($childBufferContent->getContentString());
-        }
+        $originalsPacket = $this->collectOriginalPacket($bufferContent);
         $translatedPacket = $translator->translateAll($originalsPacket->getAll());
 
         return $this->replaceBufferByTranslatedPacket($bufferContent, $translatedPacket);
+    }
+
+    /**
+     * @param BufferContent $bufferContent
+     * @param OriginalPhrasePacket|null $originalsPacket
+     * @return OriginalPhrasePacket
+     */
+    private function collectOriginalPacket(BufferContent $bufferContent, OriginalPhrasePacket $originalsPacket = null)
+    {
+        $originalsPacket = $originalsPacket ?: new OriginalPhrasePacket();
+        foreach ($bufferContent->getBuffer()->getBuffersContent() as $childBufferContent) {
+            $originalsPacket->add($childBufferContent->getContentString());
+            if ($childBufferContent->getBuffer()) {
+                $originalsPacket = $this->collectOriginalPacket($childBufferContent, $originalsPacket);
+            }
+        }
+        return $originalsPacket;
     }
 
     /**
@@ -69,6 +83,7 @@ class BufferTranslate
                 $translatedSting,
                 $content
             );
+            $buffer->remove($bufferId);
         }
 
         return $content;
@@ -112,11 +127,15 @@ class BufferTranslate
         foreach ($buffer->getBuffersContent() as $bufferId => $bufferContent) {
             $bufferKey = $buffer->generateBufferKey($bufferId);
             $translatedSting = $translatePhrasePacket->getTranslate($bufferContent->getContentString()) ?: $bufferContent->getContentString();
+            if ($bufferContent->getBuffer()) {
+                $translatedSting = $this->replaceBufferByTranslatedPacket(new BufferContent($translatedSting, $bufferContent->getBuffer()), $translatePhrasePacket);
+            }
             $content = str_replace(
                 $bufferKey,
                 $translatedSting,
                 $content
             );
+            $buffer->remove($bufferId);
         }
 
         return $content;

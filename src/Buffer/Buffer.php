@@ -46,11 +46,12 @@ class Buffer
      * Add buffer and get string buffer key
      * (after translate we replace this key two content)
      * @param BufferContent $bufferContent
+     * @param string|null $bufferContentId
      * @return string
      */
-    public function add(BufferContent $bufferContent)
+    public function add(BufferContent $bufferContent, $bufferContentId = null)
     {
-        $bufferContentId = $this->idIncrementValue++;
+        $bufferContentId = $bufferContentId ?: $this->idIncrementValue++;
         $this->buffersContent[$bufferContentId] = $bufferContent;
 
         return $this->generateBufferKey($bufferContentId);

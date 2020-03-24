@@ -4,7 +4,6 @@ namespace ALI\Translate\Translators;
 
 use ALI\Translate\Language\LanguageInterface;
 use ALI\Translate\OriginalProcessors\OriginalProcessorInterface;
-use ALI\Translate\PhrasePackets\OriginalPhrasePacket;
 use ALI\Translate\PhrasePackets\TranslatePhrasePacket;
 use ALI\Translate\Sources\Exceptions\SourceException;
 use ALI\Translate\Sources\SourceInterface;
@@ -153,15 +152,15 @@ class Translator implements TranslatorInterface
     }
 
     /**
-     * @param array $originalPhrases
+     * @param array $phrases
      * @return TranslatePhrasePacket
      */
-    public function translateAll($originalPhrases)
+    public function translateAll($phrases)
     {
         $translatePhrasePacket = new TranslatePhrasePacket();
 
         if ($this->isCurrentLanguageOriginal()) {
-            foreach ($originalPhrases as $phrase) {
+            foreach ($phrases as $phrase) {
                 $translatePhrasePacket->addTranslate($phrase, null);
             }
 
@@ -169,7 +168,7 @@ class Translator implements TranslatorInterface
         }
 
         $searchPhrases = [];
-        foreach ($originalPhrases as $phrase) {
+        foreach ($phrases as $phrase) {
             if (!$phrase) {
                 continue;
             }
@@ -201,8 +200,9 @@ class Translator implements TranslatorInterface
 
     /**
      * Fast translate without buffers and processors
+     *
      * @param string $phrase
-     * @return null|string
+     * @return string|null
      */
     public function translate($phrase)
     {

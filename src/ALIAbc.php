@@ -2,9 +2,12 @@
 
 namespace ALI;
 
+use ALI\Buffer\Buffer;
 use ALI\Buffer\BufferCaptcher;
 use ALI\Buffer\BufferContent;
 use ALI\Buffer\BufferTranslate;
+use ALI\Buffer\KeyGenerators\KeyGenerator;
+use ALI\Buffer\KeyGenerators\StaticKeyGenerator;
 use ALI\Exceptions\TranslateNotDefinedException;
 use ALI\Processors\ProcessorsManager;
 use ALI\Translate\Language\LanguageInterface;
@@ -34,6 +37,16 @@ class ALIAbc
     protected $bufferCaptcher;
 
     /**
+     * @var KeyGenerator
+     */
+    protected $templatesKeyGenerator;
+
+    /**
+     * @var BufferTranslate
+     */
+    protected $bufferTranslate;
+
+    /**
      * @param TranslatorInterface $translator
      * @param ProcessorsManager|null $processorsManager
      */
@@ -42,15 +55,25 @@ class ALIAbc
         $this->translator = $translator;
         $this->processorsManager = $processorsManager;
         $this->bufferCaptcher = new BufferCaptcher();
+        $this->templatesKeyGenerator = new StaticKeyGenerator('{', '}');
+        $this->bufferTranslate = new BufferTranslate();
     }
 
     /**
-     * @param string $originalPhrase
+     * @param string $phrase
+     * @param array $params
      * @return string
      */
-    public function translate($originalPhrase)
+    public function translate($phrase, array $params = [])
     {
-        return $this->translator->translate($originalPhrase);
+        if (!$params) {
+            return $this->translator->translate($phrase);
+        }
+        $bufferContent = $this->generateBufferContentByTemplate($phrase, $params);
+        $buffer = new Buffer($this->templatesKeyGenerator);
+        $layoutBufferContent = new BufferContent($buffer->add($bufferContent), $buffer);
+
+        return $this->bufferTranslate->translateBuffer($layoutBufferContent, $this->translator);
     }
 
     /**
@@ -74,12 +97,27 @@ class ALIAbc
     }
 
     /**
+     * @param $original
+     */
+    public function deleteOriginal($original)
+    {
+        $this->translator->getSource()->delete($original);
+    }
+
+    /**
      * @param $content
+     * @param array $params
      * @return string
      */
-    public function addToBuffer($content)
+    public function addToBuffer($content, array $params = [])
     {
-        return $this->bufferCaptcher->add($content);
+        if (!$params) {
+            return $this->bufferCaptcher->add($content);
+        }
+
+        $bufferContent = $this->generateBufferContentByTemplate($content, $params);
+
+        return $this->bufferCaptcher->getBuffer()->add($bufferContent);
     }
 
     /**
@@ -90,16 +128,15 @@ class ALIAbc
     {
         $buffer = $this->bufferCaptcher->getBuffer();
         $bufferContent = new BufferContent($contentContext, $buffer);
-        $bufferTranslate = new BufferTranslate();
 
-        if ($this->processorsManager) {
-            return $bufferTranslate->translateBuffer($bufferContent, $this->translator);
+        if (!$this->processorsManager) {
+            return $this->bufferTranslate->translateBuffer($bufferContent, $this->translator);
         }
 
         if ($this->isSourceSensitiveForRequestsCount($this->translator->getSource())) {
-            return $bufferTranslate->translateBuffersWithProcessorsByOneRequest($bufferContent, $this->translator, $this->processorsManager);
+            return $this->bufferTranslate->translateBuffersWithProcessorsByOneRequest($bufferContent, $this->translator, $this->processorsManager);
         } else {
-            return $bufferTranslate->translateBuffersWithProcessors($bufferContent, $this->translator, $this->processorsManager);
+            return $this->bufferTranslate->translateBuffersWithProcessors($bufferContent, $this->translator, $this->processorsManager);
         }
     }
 
@@ -141,5 +178,21 @@ class ALIAbc
     public function getBufferCaptcher()
     {
         return $this->bufferCaptcher;
+    }
+
+    /**
+     * @param $phrase
+     * @param array $contentParams
+     * @return BufferContent
+     */
+    protected function generateBufferContentByTemplate($phrase, array $contentParams = [])
+    {
+        $buffer = new Buffer($this->templatesKeyGenerator);
+
+        foreach ($contentParams as $bufferId => $bufferValue) {
+            $buffer->add(new BufferContent($bufferValue), $bufferId);
+        }
+
+        return new BufferContent($phrase, $buffer);
     }
 }

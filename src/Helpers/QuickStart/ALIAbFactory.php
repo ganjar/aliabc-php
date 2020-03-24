@@ -1,6 +1,6 @@
 <?php
 
-namespace ALI\Helpers;
+namespace ALI\Helpers\QuickStart;
 
 use ALI\ALIAbc;
 use ALI\Processors\PreProcessors\HtmlCommentPreProcessor;
@@ -19,9 +19,9 @@ use ALI\Translate\Translators\Translator;
 use PDO;
 
 /**
- * QuickStartALIAbFactory
+ * Class
  */
-class QuickStartALIAbFactory
+class ALIAbFactory
 {
     /**
      * @param PDO $connection
@@ -29,7 +29,7 @@ class QuickStartALIAbFactory
      * @param $currentLanguageAlias
      * @return ALIAbc
      */
-    public function createHtmlBufferMysqlSource(PDO $connection, $originalLanguageAlias, $currentLanguageAlias)
+    public function createALIByHtmlBufferMysqlSource(PDO $connection, $originalLanguageAlias, $currentLanguageAlias)
     {
         $translator = $this->generateMysqlTranslator($connection, $originalLanguageAlias, $currentLanguageAlias);
 
@@ -44,7 +44,7 @@ class QuickStartALIAbFactory
      * @param $currentLanguageAlias
      * @return ALIAbc
      */
-    public function createMysqlSource(PDO $connection, $originalLanguageAlias, $currentLanguageAlias)
+    public function createALIByMysqlSource(PDO $connection, $originalLanguageAlias, $currentLanguageAlias)
     {
         $translator = $this->generateMysqlTranslator($connection, $originalLanguageAlias, $currentLanguageAlias);
 
@@ -58,7 +58,7 @@ class QuickStartALIAbFactory
      * @return ALIAbc
      * @throws UnsupportedLanguageAliasException
      */
-    public function createHtmlBufferCsvSource($translationDirectoryPath, $originalLanguageAlias, $currentLanguageAlias)
+    public function createALIByHtmlBufferCsvSource($translationDirectoryPath, $originalLanguageAlias, $currentLanguageAlias)
     {
         $translator = $this->generateCsvTranslator($translationDirectoryPath, $originalLanguageAlias, $currentLanguageAlias);
 
@@ -74,7 +74,7 @@ class QuickStartALIAbFactory
      * @return ALIAbc
      * @throws UnsupportedLanguageAliasException
      */
-    public function createCsvSource($translationDirectoryPath, $originalLanguageAlias, $currentLanguageAlias)
+    public function createALIByCsvSource($translationDirectoryPath, $originalLanguageAlias, $currentLanguageAlias)
     {
         $translator = $this->generateCsvTranslator($translationDirectoryPath, $originalLanguageAlias, $currentLanguageAlias);
 
