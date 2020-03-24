@@ -3,11 +3,17 @@
 namespace ALI;
 
 use ALI\Buffer\Buffer;
+use ALI\Buffer\BufferCaptcher;
+use ALI\Buffer\BufferContent;
 use ALI\Buffer\BufferTranslate;
-use ALI\Exceptions\BufferTranslateNotDefinedException;
+use ALI\Buffer\KeyGenerators\KeyGenerator;
+use ALI\Buffer\KeyGenerators\StaticKeyGenerator;
 use ALI\Exceptions\TranslateNotDefinedException;
+use ALI\Processors\ProcessorsManager;
 use ALI\Translate\Language\LanguageInterface;
-use ALI\Translate\Translate;
+use ALI\Translate\Sources\MySqlSource;
+use ALI\Translate\Sources\SourceInterface;
+use ALI\Translate\Translators\TranslatorInterface;
 
 /**
  * Class ALI
@@ -16,9 +22,24 @@ use ALI\Translate\Translate;
 class ALIAbc
 {
     /**
-     * @var Translate
+     * @var TranslatorInterface
      */
-    protected $translate;
+    protected $translator;
+
+    /**
+     * @var null|ProcessorsManager
+     */
+    protected $processorsManager;
+
+    /**
+     * @var BufferCaptcher
+     */
+    protected $bufferCaptcher;
+
+    /**
+     * @var KeyGenerator
+     */
+    protected $templatesKeyGenerator;
 
     /**
      * @var BufferTranslate
@@ -26,60 +47,120 @@ class ALIAbc
     protected $bufferTranslate;
 
     /**
-     * @param BufferTranslate $bufferTranslate
-     * @return $this
+     * @param TranslatorInterface $translator
+     * @param ProcessorsManager|null $processorsManager
      */
-    public function setBufferTranslate(BufferTranslate $bufferTranslate)
+    public function __construct(TranslatorInterface $translator, ProcessorsManager $processorsManager = null)
     {
-        $this->bufferTranslate = $bufferTranslate;
-
-        return $this;
+        $this->translator = $translator;
+        $this->processorsManager = $processorsManager;
+        $this->bufferCaptcher = new BufferCaptcher();
+        $this->templatesKeyGenerator = new StaticKeyGenerator('{', '}');
+        $this->bufferTranslate = new BufferTranslate();
     }
 
     /**
-     * @return BufferTranslate
-     * @throws BufferTranslateNotDefinedException
+     * @param string $phrase
+     * @param array $params
+     * @return string
      */
-    public function getBufferTranslate()
+    public function translate($phrase, array $params = [])
     {
-        if (!$this->bufferTranslate) {
-            throw new BufferTranslateNotDefinedException('BufferTranslate is not defined');
+        if (!$params) {
+            return $this->translator->translate($phrase);
+        }
+        $bufferContent = $this->generateBufferContentByTemplate($phrase, $params);
+        $buffer = new Buffer($this->templatesKeyGenerator);
+        $layoutBufferContent = new BufferContent($buffer->add($bufferContent), $buffer);
+
+        return $this->bufferTranslate->translateBuffer($layoutBufferContent, $this->translator);
+    }
+
+    /**
+     * @param array $originalPhrases
+     * @return Translate\PhrasePackets\TranslatePhrasePacket
+     */
+    public function translateAll($originalPhrases)
+    {
+        return $this->translator->translateAll($originalPhrases);
+    }
+
+    /**
+     * @param string $original
+     * @param string $translate
+     * @throws Translate\Sources\Exceptions\SourceException
+     */
+    public function saveTranslate($original, $translate)
+    {
+        $currentLanguage = $this->translator->getLanguage();
+        $this->translator->getSource()->saveTranslate($currentLanguage, $original, $translate);
+    }
+
+    /**
+     * @param $original
+     */
+    public function deleteOriginal($original)
+    {
+        $this->translator->getSource()->delete($original);
+    }
+
+    /**
+     * @param $content
+     * @param array $params
+     * @return string
+     */
+    public function addToBuffer($content, array $params = [])
+    {
+        if (!$params) {
+            return $this->bufferCaptcher->add($content);
         }
 
-        return $this->bufferTranslate;
+        $bufferContent = $this->generateBufferContentByTemplate($content, $params);
+
+        return $this->bufferCaptcher->getBuffer()->add($bufferContent);
     }
 
     /**
-     * @return Buffer
-     * @throws BufferTranslateNotDefinedException
+     * @param $contentContext
+     * @return string
      */
-    public function getBuffer()
+    public function translateBuffer($contentContext)
     {
-        return $this->getBufferTranslate()->getBuffer();
-    }
+        $buffer = $this->bufferCaptcher->getBuffer();
+        $bufferContent = new BufferContent($contentContext, $buffer);
 
-    /**
-     * @param Translate $translate
-     * @return $this
-     */
-    public function setTranslate(Translate $translate)
-    {
-        $this->translate = $translate;
-
-        return $this;
-    }
-
-    /**
-     * @return Translate
-     * @throws TranslateNotDefinedException
-     */
-    public function getTranslate()
-    {
-        if (!$this->translate) {
-            throw new TranslateNotDefinedException('Translate is not defined');
+        if (!$this->processorsManager) {
+            return $this->bufferTranslate->translateBuffer($bufferContent, $this->translator);
         }
 
-        return $this->translate;
+        if ($this->isSourceSensitiveForRequestsCount($this->translator->getSource())) {
+            return $this->bufferTranslate->translateBuffersWithProcessorsByOneRequest($bufferContent, $this->translator, $this->processorsManager);
+        } else {
+            return $this->bufferTranslate->translateBuffersWithProcessors($bufferContent, $this->translator, $this->processorsManager);
+        }
+    }
+
+    /**
+     * @param SourceInterface $source
+     * @return bool
+     */
+    protected function isSourceSensitiveForRequestsCount(SourceInterface $source)
+    {
+        switch (get_class($source)) {
+            case MySqlSource::class:
+                return true;
+                break;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCurrentLanguageOriginal()
+    {
+        return $this->translator->isCurrentLanguageOriginal();
     }
 
     /**
@@ -88,16 +169,30 @@ class ALIAbc
      */
     public function getLanguage()
     {
-        return $this->getTranslate()->getLanguage();
+        return $this->translator->getLanguage();
     }
 
     /**
-     * This method starts global buffering
-     * for translate all buffers in source
-     * @throws BufferTranslateNotDefinedException
+     * @return BufferCaptcher
      */
-    public function initSourceBuffering()
+    public function getBufferCaptcher()
     {
-        $this->getBufferTranslate()->initBuffering();
+        return $this->bufferCaptcher;
+    }
+
+    /**
+     * @param $phrase
+     * @param array $contentParams
+     * @return BufferContent
+     */
+    protected function generateBufferContentByTemplate($phrase, array $contentParams = [])
+    {
+        $buffer = new Buffer($this->templatesKeyGenerator);
+
+        foreach ($contentParams as $bufferId => $bufferValue) {
+            $buffer->add(new BufferContent($bufferValue), $bufferId);
+        }
+
+        return new BufferContent($phrase, $buffer);
     }
 }

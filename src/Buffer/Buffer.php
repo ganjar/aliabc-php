@@ -2,6 +2,8 @@
 
 namespace ALI\Buffer;
 
+use ALI\Buffer\KeyGenerators\KeyGenerator;
+
 /**
  * Class Buffer
  * @package ALI
@@ -9,73 +11,63 @@ namespace ALI\Buffer;
 class Buffer
 {
     /**
-     * @var array
+     * @var KeyGenerator
+     */
+    protected $keyGenerator;
+
+    /**
+     * @var BufferContent[]
      */
     protected $buffersContent = [];
 
     /**
-     * Buffering content in callback function
-     * @param \Closure $callback
+     * @var int
      */
-    public function buffering(\Closure $callback)
+    protected $idIncrementValue = 0;
+
+    /**
+     * @param KeyGenerator $keyGenerator
+     */
+    public function __construct(KeyGenerator $keyGenerator)
     {
-        $this->start();
-        $callback();
-        $this->end();
+        $this->keyGenerator = $keyGenerator;
     }
 
     /**
-     * Start buffering
+     * @param string $content
+     * @return string
      */
-    public function start()
+    public function addContent($content)
     {
-        ob_start(function ($bufferContent) {
-            return $this->add($bufferContent);
-        });
+        return $this->add(new BufferContent($content));
     }
 
     /**
      * Add buffer and get string buffer key
-     * (after translate we replace this key to content)
-     * @param string $bufferContent
+     * (after translate we replace this key two content)
+     * @param BufferContent $bufferContent
+     * @param string|null $bufferContentId
      * @return string
      */
-    public function add($bufferContent)
+    public function add(BufferContent $bufferContent, $bufferContentId = null)
     {
-        $bufferContentId = count($this->buffersContent);
+        $bufferContentId = $bufferContentId ?: $this->idIncrementValue++;
         $this->buffersContent[$bufferContentId] = $bufferContent;
 
-        return $this->getBufferKey($bufferContentId);
+        return $this->generateBufferKey($bufferContentId);
     }
 
     /**
-     * @param $id
-     * @return string
-     */
-    public function getBufferKey($id)
-    {
-        return '<!--ALI:buffer:' . $id . '-->';
-    }
-
-    /**
-     * Stop buffering and get stub content
-     */
-    public function end()
-    {
-        ob_end_flush();
-    }
-
-    /**
-     * @param string $bufferContentId
-     * @return string|false
+     * @param int $bufferContentId
+     * @return null|BufferContent
      */
     public function getBufferContent($bufferContentId)
     {
-        return !empty($this->buffersContent[$bufferContentId]) ? $this->buffersContent[$bufferContentId] : false;
+        return !empty($this->buffersContent[$bufferContentId]) ? $this->buffersContent[$bufferContentId] : null;
     }
 
     /**
-     * @return array
+     * @return BufferContent[]
      */
     public function getBuffersContent()
     {
@@ -83,7 +75,7 @@ class Buffer
     }
 
     /**
-     * @param $bufferContentId
+     * @param int $bufferContentId
      */
     public function remove($bufferContentId)
     {
@@ -92,8 +84,20 @@ class Buffer
         }
     }
 
+    /**
+     * Clear buffers contents
+     */
     public function clear()
     {
         $this->buffersContent = [];
+    }
+
+    /**
+     * @param int $id
+     * @return string
+     */
+    public function generateBufferKey($id)
+    {
+        return $this->keyGenerator->generateKey($id);
     }
 }

@@ -2,10 +2,13 @@
 
 namespace ALI\Buffer;
 
-use ALI\Buffer\PreProcessors\PreProcessorInterface;
-use ALI\Buffer\Processors\ProcessorInterface;
-use ALI\Exceptions\TranslateNotDefinedException;
-use ALI\Translate\Translate;
+use ALI\Buffer\KeyGenerators\StaticKeyGenerator;
+use ALI\Processors\ProcessorsManager;
+use ALI\Translate\PhrasePackets\OriginalPhrasePacket;
+use ALI\Translate\PhrasePackets\TranslatePhrasePacket;
+use ALI\Translate\Sources\FakeBufferSource;
+use ALI\Translate\Translators\Translator;
+use ALI\Translate\Translators\TranslatorInterface;
 
 /**
  * Class BufferTranslate
@@ -14,195 +17,127 @@ use ALI\Translate\Translate;
 class BufferTranslate
 {
     /**
-     * @var Translate
-     */
-    protected $translate;
-
-    /**
-     * @var Buffer
-     */
-    protected $buffer;
-
-    /**
-     * @var PreProcessorInterface[]
-     */
-    protected $preProcessors = [];
-
-    /**
-     * @var ProcessorInterface[]
-     */
-    protected $processors = [];
-
-    /**
-     * BufferTranslate constructor.
-     * @param Translate $translate
-     */
-    public function __construct(Translate $translate)
-    {
-        $this->translate = $translate;
-    }
-
-    /**
-     * @return ProcessorInterface[]
-     */
-    public function getProcessors()
-    {
-        return $this->processors;
-    }
-
-    /**
-     * @param ProcessorInterface[] $processors
-     * @return $this
-     */
-    public function setProcessors($processors)
-    {
-        $this->processors = $processors;
-
-        return $this;
-    }
-
-    /**
-     * Add translate processor
-     * @param ProcessorInterface $processor
-     * @throws TranslateNotDefinedException
-     */
-    public function addProcessor(ProcessorInterface $processor)
-    {
-        $processor->setTranslate($this->getTranslate());
-        $this->processors[] = $processor;
-    }
-
-    /**
-     * @return PreProcessorInterface[]
-     */
-    public function getPreProcessors()
-    {
-        return $this->preProcessors;
-    }
-
-    /**
-     * @param PreProcessorInterface[] $preProcessors
-     * @return $this
-     */
-    public function setPreProcessors($preProcessors)
-    {
-        $this->preProcessors = $preProcessors;
-
-        return $this;
-    }
-
-    /**
-     * Add translate processor
-     * @param PreProcessorInterface $preProcessor
-     */
-    public function addPreProcessor(PreProcessorInterface $preProcessor)
-    {
-        $this->preProcessors[] = $preProcessor;
-    }
-
-    /**
-     * @return Translate
-     * @throws TranslateNotDefinedException
-     */
-    public function getTranslate()
-    {
-        if (is_null($this->translate)) {
-            throw new TranslateNotDefinedException('Translate object must be defined');
-        }
-
-        return $this->translate;
-    }
-
-    /**
-     * @return Buffer
-     */
-    public function getBuffer()
-    {
-        if (is_null($this->buffer)) {
-            $this->setBuffer(new Buffer());
-        }
-
-        return $this->buffer;
-    }
-
-    /**
-     * @param Buffer $buffer
-     * @return $this
-     */
-    public function setBuffer(Buffer $buffer)
-    {
-        $this->buffer = $buffer;
-
-        return $this;
-    }
-
-    /**
-     * Process all buffers and clear stack
-     * @param $content
-     * @return mixed
-     */
-    public function translateAllAndReplaceInSource($content)
-    {
-        //The maximum number of iterations to find the buffer identifier in other buffers
-        $maxIterations = count($this->getBuffer()->getBuffersContent());
-
-        for ($i = 0; $i < $maxIterations; $i++) {
-            $buffersContent = $this->getBuffer()->getBuffersContent();
-
-            $findSuccess = false;
-            foreach ($buffersContent as $bufferId => $bufferContent) {
-                $bufferKey = $this->getBuffer()->getBufferKey($bufferId);
-                if (strpos($content, $bufferKey) !== false) {
-                    $translateBufferContent = $this->translateContent($bufferContent);
-                    $content = str_replace(
-                        $bufferKey,
-                        $translateBufferContent,
-                        $content
-                    );
-                    $this->getBuffer()->remove($bufferId);
-                    //Decrease max iterations if we found buffer id in content
-                    $maxIterations--;
-                    $findSuccess = true;
-                }
-            }
-            //Break if iteration without result
-            if (!$findSuccess) {
-                break;
-            }
-        }
-
-        $this->getBuffer()->clear();
-
-        return $content;
-    }
-
-    /**
-     * Run all processors by content
-     * @param string $content
+     * Translates all buffer contents, and replace their in parent content
+     *
+     * @param BufferContent $bufferContent
+     * @param TranslatorInterface $translator
      * @return string
      */
-    public function translateContent($content)
+    public function translateBuffer(BufferContent $bufferContent, TranslatorInterface $translator)
     {
-        $cleanBuffer = $content;
-        foreach ($this->getPreProcessors() as $preProcessor) {
-            $cleanBuffer = $preProcessor->process($cleanBuffer);
+        if (!$bufferContent->getBuffer()) {
+            return $bufferContent->getContentString();
         }
 
-        foreach ($this->getProcessors() as $processor) {
-            $content = $processor->process($content, $cleanBuffer);
+        $originalsPacket = $this->collectOriginalPacket($bufferContent);
+        $translatedPacket = $translator->translateAll($originalsPacket->getAll());
+
+        return $this->replaceBufferByTranslatedPacket($bufferContent, $translatedPacket);
+    }
+
+    /**
+     * @param BufferContent $bufferContent
+     * @param OriginalPhrasePacket|null $originalsPacket
+     * @return OriginalPhrasePacket
+     */
+    private function collectOriginalPacket(BufferContent $bufferContent, OriginalPhrasePacket $originalsPacket = null)
+    {
+        $originalsPacket = $originalsPacket ?: new OriginalPhrasePacket();
+        foreach ($bufferContent->getBuffer()->getBuffersContent() as $childBufferContent) {
+            $originalsPacket->add($childBufferContent->getContentString());
+            if ($childBufferContent->getBuffer()) {
+                $originalsPacket = $this->collectOriginalPacket($childBufferContent, $originalsPacket);
+            }
+        }
+        return $originalsPacket;
+    }
+
+    /**
+     * Replace content by buffers translation. Which pieces buffer content will be translated detecting processorsManager.
+     * Method makes N requests to translator source, where N = (buffers count * active processors)
+     * if for your source are sensitive for request count - use method "translateContentByOneRequest"
+     * @see translateBuffersWithProcessorsByOneRequest
+     *
+     * @param BufferContent $bufferContent
+     * @param TranslatorInterface $translator
+     * @return string
+     */
+    public function translateBuffersWithProcessors(BufferContent $bufferContent, TranslatorInterface $translator, ProcessorsManager $processorsManager)
+    {
+        $buffer = $bufferContent->getBuffer();
+        if (!$buffer) {
+            return $bufferContent->getContentString();
+        }
+        $content = $bufferContent->getContentString();
+
+        foreach ($buffer->getBuffersContent() as $bufferId => $childBufferContent) {
+            $bufferKey = $buffer->generateBufferKey($bufferId);
+
+            // resolve child buffers
+            $translatedSting = $processorsManager->executeProcesses($childBufferContent->getContentString(), $translator);
+            if ($childBufferContent->getBuffer()) {
+                $translatedSting = $this->translateBuffersWithProcessors(new BufferContent($translatedSting, $childBufferContent->getBuffer()), $translator, $processorsManager);
+            }
+            $content = str_replace(
+                $bufferKey,
+                $translatedSting,
+                $content
+            );
+            $buffer->remove($bufferId);
         }
 
         return $content;
     }
 
     /**
-     * This method starts global buffering
-     * for translate all buffers in source
+     * Optimization for method "translateBuffersWithProcessors"
+     * @see translateBuffersWithProcessors     *
+     *
+     * If you has many buffers, and source sensitive for request count,
+     * this method may decrease request numbers to one.
+     * But this method create more php actions with content replacing
+     *
+     * @param BufferContent $bufferContent
+     * @param TranslatorInterface $translator
+     * @return string
      */
-    public function initBuffering()
+    public function translateBuffersWithProcessorsByOneRequest(BufferContent $bufferContent, TranslatorInterface $translator, ProcessorsManager $processorsManager)
     {
-        ob_start(function ($buffer) {
-            return $this->translateAllAndReplaceInSource($buffer);
-        });
+        // Init additional objects
+        $bufferLayer = new Buffer(new StaticKeyGenerator('#ali-buffer-layer-content_', '#'));
+
+        $fakeBufferSource = new FakeBufferSource($translator->getSource()->getOriginalLanguage(), $bufferLayer);
+        $bufferLayerTranslator = new Translator($translator->getLanguage(),$fakeBufferSource);
+
+        // Create additional buffering layer
+        $layerContent = $this->translateBuffersWithProcessors($bufferContent, $bufferLayerTranslator, $processorsManager);
+
+        return $this->translateBuffer(new BufferContent($layerContent, $bufferLayer), $translator);
+    }
+
+    /**
+     * @param BufferContent $bufferContent
+     * @param TranslatePhrasePacket $translatePhrasePacket
+     * @return string|string[]
+     */
+    private function replaceBufferByTranslatedPacket(BufferContent $bufferContent, TranslatePhrasePacket $translatePhrasePacket)
+    {
+        $buffer = $bufferContent->getBuffer();
+        $content = $bufferContent->getContentString();
+        foreach ($buffer->getBuffersContent() as $bufferId => $bufferContent) {
+            $bufferKey = $buffer->generateBufferKey($bufferId);
+            $translatedSting = $translatePhrasePacket->getTranslate($bufferContent->getContentString()) ?: $bufferContent->getContentString();
+            if ($bufferContent->getBuffer()) {
+                $translatedSting = $this->replaceBufferByTranslatedPacket(new BufferContent($translatedSting, $bufferContent->getBuffer()), $translatePhrasePacket);
+            }
+            $content = str_replace(
+                $bufferKey,
+                $translatedSting,
+                $content
+            );
+            $buffer->remove($bufferId);
+        }
+
+        return $content;
     }
 }

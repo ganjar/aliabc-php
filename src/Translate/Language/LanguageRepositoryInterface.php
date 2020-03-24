@@ -22,7 +22,7 @@ interface LanguageRepositoryInterface
 
     /**
      * @param bool $onlyActive
-     * @return Language[]|array
+     * @return Language[]
      */
     public function getAll($onlyActive);
 }

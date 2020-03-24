@@ -2,14 +2,12 @@
 
 namespace ALI\Translate\TranslateProcessors;
 
-
 /**
  * Class ReplaceNumbersTranslateProcessor
  * @package ALI\Translate\TranslateProcessors
  */
 class ReplaceNumbersTranslateProcessor implements TranslateProcessorInterface
 {
-
     /**
      * @param string $original
      * @param string $translate

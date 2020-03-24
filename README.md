@@ -1,106 +1,89 @@
 # aliabc-php
 **Application Language Integration ABC** - php library
 
+Packet helps create site translations with high performance.<br>
+When you use as translation source DataBase(example Mysql), for translate all phrases, packet make only one request to DB.
+First, instead translate you get their id, which you put to you response code. At finish, ALIAbc replace all their translation id for real translation. 
+
 ## Installation
 
 ```bash
 $ composer require ganjar/aliabc-php
 ```
 
+## Quick start
+First of all, you need choose type of translation source, which you will be used.
+From the box, in this packet you may use:
+* MysqlSource
+* CsvSource
+
+For simplification first time using, we created `QuickStartALIAbFactory`, which creates for you instance of `ALIAbc` with general configuration.<br>
+`ALIAbc` is facade Class with access for the most popular methods.<br>
+<br>
+Exist two base types for using this packet:
+* with html auto translation. In this cast, you may put to buffer full html text, and ALIAb search and translate all phrases
+    * With MySql source 
+    ```php
+    $aliAbc = (new \ALI\Helpers\QuickStart\ALIAbFactory())->createALIByHtmlBufferMysqlSource((new PDO('mysql:dbname=test;host=mysql', 'root', 'root')),'en','ua');
+    ```
+    * With CSV source 
+    ```php
+    $aliAbc = (new \ALI\Helpers\QuickStart\ALIAbFactory())->createALIByHtmlBufferCsvSource('/path/to/writable/directory/for/translation','en','ua'));
+    ```
+* manually adding text for translation in html
+    * With MySql source 
+    ```php
+    $aliAbc = (new \ALI\Helpers\QuickStart\ALIAbFactory())->createALIByMysqlSource((new PDO('mysql:dbname=test;host=mysql', 'root', 'root')),'en','ua');
+    ```
+    * With CSV source 
+    ```php
+    $aliAbc = (new \ALI\Helpers\QuickStart\ALIAbFactory())->createALIByCsvSource('/path/to/writable/directory/for/translation','en','ua'))
+    ```
+
+
 ## Basic Usage
 
 ```php
-<?php
+/** @var Ali\ALIAbc $aliAbc */
+$aliAbc->saveTranslate('Hello', 'Привіт');
 
-//Set translation source - MySQL
-//$connection = new PDO("mysql:dbname=test;host=localhost", 'root', 'root');
-//$aliTranslateSource = new \ALI\Translate\Sources\MySqlSource($connection);
-//$mySqlSourceInstaller = new \ALI\Translate\Sources\MySqlSourceInstaller($connection);
-//if (!$mySqlSourceInstaller->isInstalled()) {
-//    $mySqlSourceInstaller->install();
-//}
+// Dirrect translation
+echo $aliAbc->translate('Hello');
+var_dump($aliAbc->translateAll(['Hello']));
 
-//Set CSV files as a translation source. Files in dir /lng/ with comma delimiter
-$fileSource = new \ALI\Translate\Sources\CsvFileSource(__DIR__ . '/lng/', ",", 'txt');
+// Translate in html, using buffer, for translation at end, by one request for Source
+$html =  '<div>' . $aliAbc->addToBuffer('Hello') . '</div>';
+echo $html; // '<div>#ali-buffer-layer-content_0#</div>'
+echo $aliAbc->translateBuffer($html); // '<div>Привіт</div>'
 
-//Parse language
-$languageAlias = false;
-if (preg_match('#^/(?<language>\w{2})/#', $_SERVER['REQUEST_URI'], $parseUriMatches)) {
-    $languageAlias = $parseUriMatches['language'];
-}
+// If you choose type with auto html translation, you may put full html code for tanslate
+$html =  $aliAbc->addToBuffer('<div>Hello</div>');
+echo $aliAbc->translateBuffer($html); // '<div>Привіт</div>'
+```
+Also you may discover object `$aliAbc->getBufferCaptcher()` for additional methods
 
-//Set language
-$language = new \ALI\Translate\Language\Language(
-    $languageAlias, 
-    '', 
-    $languageAlias == 'en' || !$languageAlias
-);
+#### Templates
 
-//Make Translate instance
-$translate = new \ALI\Translate\Translate(
-    $language,
-    $fileSource
-);
-$translate->addOriginalProcessor(new \ALI\Translate\OriginalProcessors\ReplaceNumbersOriginalProcessor());
+Also you may translate templates with parameters:
 
-//BufferTranslate - class for parse and translate phrases in content
-$bufferTranslate = new \ALI\Buffer\BufferTranslate($translate);
+```php
+/** @var Ali\ALIAbc $aliAbc */
+echo $aliAbc->translate('Hello {objectName}!', [
+    'objectName' => 'sun',
+]);
 
-//PreProcessors - hide some content parts from buffer processors
-$bufferTranslate->addPreProcessor(new \ALI\Buffer\PreProcessors\IgnoreHtmlTagsPreProcessor(['style', 'script']));
-$bufferTranslate->addPreProcessor(new \ALI\Buffer\PreProcessors\HtmlCommentPreProcessor());
-$bufferTranslate->addPreProcessor(new \ALI\Buffer\PreProcessors\SliIgnoreTagPreProcessor());
+$content = '<div>'. $aliAbc->addToBuffer('Hello {objectName}!', [
+    'objectName' => 'sun',
+]) .'</div>';
+echo $aliAbc->translateBuffer($content);
 
-//Add buffer processor for parse content in HTML tags
-$bufferTranslate->addProcessor(new \ALI\Buffer\Processors\HtmlTagProcessor());
+```
 
-//Add buffer processor for parse phrases in custom tags
-//$bufferTranslate->addProcessor(new CustomTagProcessor('[[', ']]'));
-
-//Add processor for translate html attributes content
-$aliHtmlAttributesProcessor = new \ALI\Buffer\Processors\HtmlAttributesProcessor();
-$aliHtmlAttributesProcessor->setAllowAttributes(['title', 'alt', 'rel']);
-$bufferTranslate->addProcessor($aliHtmlAttributesProcessor);
-
-//Add processor for replace language in URLs
-$bufferTranslate->addProcessor(new \ALI\Buffer\Processors\HtmlLinkProcessor());
-
-$ali = new \ALI\ALIAbc();
-$ali->setTranslate($translate);
-$ali->setBufferTranslate($bufferTranslate);
-
-//Use buffers
-$ali->iniSourceBuffering();
-
-//start/end
-$ali->getBuffer()->start();
-echo '<b>Hello word</b>';
-$ali->getBuffer()->end();
-
-//Without translate because outside buffer
-echo '<b>Without translate content</b>';
-
-$ali->getBuffer()->start();
-echo '<b>Translated content inside buffer</b>';
-$ali->getBuffer()->end();
-
-//simple add buffer
-echo $ali->getBuffer()->add('<b>Hello word 3</b>');
-
-//Buffering all content inside callback function
-echo $ali->getBuffer()->buffering(function () {
-    echo '<b>Hello word 4</b>';
-});
-
-//Quick translation of a specific phrase
-echo $ali->getTranslate()->translate('Hello word');
-
-//Buffering all next content
-$ali->getBuffer()->start();
-
-//Fast translate
-//echo $ali->getTranslate()->translate('Hello word');
-//Save translate
-//$ali->getTranslate()->saveTranslate($language, 'Hello word', 'Привет мир');
-
-return $ali;
+### Tests
+In packet exist docker-compose file, with environment for testing.
+```bash
+docker-compose up -d
+docker-compose exec php bash
+composer install
+./vendor/bin/phpunit
+``` 
