@@ -1,6 +1,10 @@
 # aliabc-php
 **Application Language Integration ABC** - php library
 
+Packet helps create site translations with high performance.<br>
+When you use as translation source DataBase(example Mysql), for translate all phrases, packet make only one request to DB.
+First, instead translate you get their id, which you put to you response code. At finish, ALIAbc replace all their translation id for real translation. 
+
 ## Installation
 
 ```bash
@@ -13,9 +17,11 @@ From the box, in this packet you may use:
 * MysqlSource
 * CsvSource
 
-For first use simplification , we created `QuickStartALIAbFactory`, which creates for you instance of `ALIAbc`, which is facade Class, with general configuration.<br>
-Exist two base type of using this packet:
-* with html auto translation. In this cast you may put to buffer full html text, and ALIAb search and translate all phrases
+For simplification first time using, we created `QuickStartALIAbFactory`, which creates for you instance of `ALIAbc` with general configuration.<br>
+`ALIAbc` is facade Class with access for the most popular methods.<br>
+<br>
+Exist two base types for using this packet:
+* with html auto translation. In this cast, you may put to buffer full html text, and ALIAb search and translate all phrases
     * With MySql source 
     ```php
     $aliAbc = (new \ALI\Helpers\QuickStart\ALIAbFactory())->createALIByHtmlBufferMysqlSource((new PDO('mysql:dbname=test;host=mysql', 'root', 'root')),'en','ua');
